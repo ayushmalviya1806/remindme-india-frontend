@@ -1,0 +1,19 @@
+/* RemindMe India - Landing Page Styles */
+
+/* Ensure light mode only */
+html {
+  color-scheme: light;
+}
+
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+/* Force font rendering */
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
