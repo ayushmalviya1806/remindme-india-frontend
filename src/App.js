@@ -28,6 +28,33 @@ function App() {
       <B2BSection />
       <FinalCTA />
       <Footer />
+      
+      {/* Floating WhatsApp CTA Button */}
+      <a
+        href="https://wa.me/916269915175?text=Hi"
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          zIndex: 9999,
+          backgroundColor: '#25D366',
+          borderRadius: '50px',
+          padding: '12px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0px 8px 24px rgba(37, 211, 102, 0.4)',
+          textDecoration: 'none',
+          color: 'white',
+          fontFamily: 'Plus Jakarta Sans, sans-serif',
+          fontWeight: '700',
+          fontSize: '14px',
+        }}
+      >
+        💬 Try Free
+      </a>
     </div>
   );
 }
