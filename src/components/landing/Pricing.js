@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
-const WA_PRO_LINK = 'https://wa.me/916269915175?text=Hi%20I%20want%20Pro%20plan';
+const RAZORPAY_LINK = 'https://razorpay.me/@remindmeindia';
 
 const FREE_FEATURES = [
   '10 reminders per month',
@@ -85,6 +85,11 @@ export default function Pricing() {
               Most Popular
             </span>
 
+            {/* Urgency Badge */}
+            <div className="inline-block bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold mb-4">
+              🔥 Limited Beta Price
+            </div>
+
             <div className="mb-6">
               <p className="text-white/60 text-sm font-body mb-1">PRO</p>
               <div className="flex items-baseline gap-1">
@@ -106,15 +111,17 @@ export default function Pricing() {
             </div>
 
             <a
-              href={WA_PRO_LINK}
+              href={RAZORPAY_LINK}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="pricing-pro-cta"
               className="block text-center rounded-full bg-white text-rm-primary font-heading font-bold text-base px-6 py-3.5 hover:bg-rm-beige transition-all duration-300 shadow-lg"
             >
-              Get Pro — ₹99/month →
+              💳 Get Pro — ₹99/month →
             </a>
-            <p className="text-center text-xs text-white/50 mt-3 font-body">✓ Cancel anytime  ✓ No questions asked</p>
+            <p className="text-center text-xs text-white/50 mt-3 font-body">
+              🔒 Secured by Razorpay • UPI, Cards, NetBanking
+            </p>
           </div>
         </div>
 

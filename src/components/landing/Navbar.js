@@ -77,6 +77,15 @@ export default function Navbar() {
             <span className="text-base">→</span>
           </a>
 
+          <a
+            href="https://razorpay.me/@remindmeindia"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden lg:inline-flex items-center gap-1 rounded-full border-2 border-rm-primary text-rm-primary font-heading font-bold text-sm px-5 py-2.5 hover:bg-rm-primary hover:text-white transition-all duration-300"
+          >
+            Get Pro ₹99 →
+          </a>
+
           {/* Mobile Hamburger */}
           <button
             data-testid="mobile-menu-toggle"

@@ -50,6 +50,17 @@ export default function FinalCTA() {
           <p className="mt-4 text-sm text-white/60 font-body">
             👆 Tap to open WhatsApp directly
           </p>
+          <p className="mt-6 text-white/60 text-sm font-body">
+            Already decided?{' '}
+            <a
+              href="https://razorpay.me/@remindmeindia"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white underline font-semibold hover:opacity-80 transition-opacity"
+            >
+              Go directly to Pro — ₹99/month →
+            </a>
+          </p>
         </div>
 
         {/* Trust row */}
