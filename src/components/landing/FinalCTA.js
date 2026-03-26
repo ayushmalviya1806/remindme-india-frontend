@@ -53,7 +53,7 @@ export default function FinalCTA() {
           <p className="mt-6 text-white/60 text-sm font-body">
             Already decided?{' '}
             <a
-              href="https://razorpay.me/@remindmeindia"
+              href="https://rzp.io/rzp/0txKjaD"
               target="_blank"
               rel="noopener noreferrer"
               className="text-white underline font-semibold hover:opacity-80 transition-opacity"

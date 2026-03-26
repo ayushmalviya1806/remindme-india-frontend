@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
-const RAZORPAY_LINK = 'https://razorpay.me/@remindmeindia';
+const RAZORPAY_LINK = 'https://rzp.io/rzp/0txKjaD';
 
 const FREE_FEATURES = [
   '10 reminders per month',
