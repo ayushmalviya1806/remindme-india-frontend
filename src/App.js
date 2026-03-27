@@ -1,3 +1,4 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import "@/App.css";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import Navbar from "@/components/landing/Navbar";
@@ -11,8 +12,9 @@ import Pricing from "@/components/landing/Pricing";
 import B2BSection from "@/components/landing/B2BSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
+import AdminDashboard from "@/pages/AdminDashboard";
 
-function App() {
+function LandingPage() {
   useScrollAnimation();
 
   return (
@@ -56,6 +58,17 @@ function App() {
         💬 Try Free
       </a>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+    </Router>
   );
 }
 
