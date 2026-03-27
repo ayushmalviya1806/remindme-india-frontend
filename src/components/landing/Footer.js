@@ -1,4 +1,5 @@
 import { Bell } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const B2B_EMAIL = 'mailto:ayushmalviya1806@gmail.com?subject=B2B%20Inquiry';
 
@@ -7,6 +8,7 @@ const QUICK_LINKS = [
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
   { label: 'For Business', href: '#for-business' },
+  { label: 'Admin', href: '/admin' },
 ];
 
 const SUPPORT_LINKS = [
@@ -41,13 +43,23 @@ export default function Footer() {
             <h4 className="font-heading font-bold text-sm text-white/80 mb-4 uppercase tracking-wider">Quick Links</h4>
             <div className="space-y-3">
               {QUICK_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
-                >
-                  {link.label}
-                </a>
+                link.href.startsWith('/admin') ? (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
+                  >
+                    {link.label}
+                  </a>
+                )
               ))}
             </div>
           </div>
