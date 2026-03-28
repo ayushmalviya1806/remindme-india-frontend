@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
-const RAZORPAY_LINK = 'https://rzp.io/rzp/0txKjaD';
+const RAZORPAY_LINK = 'https://rzp.io/rzp/kGQ6Iujq';
 
 const FREE_FEATURES = [
   '10 reminders per month',
