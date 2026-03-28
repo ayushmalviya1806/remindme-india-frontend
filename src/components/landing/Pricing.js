@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react';
 
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
-const RAZORPAY_LINK = 'https://rzp.io/rzp/kGQ6Iujq';
+const RAZORPAY_LINK = '/pro';
 
 const FREE_FEATURES = [
   '10 reminders per month',
@@ -112,8 +112,6 @@ export default function Pricing() {
 
             <a
               href={RAZORPAY_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
               data-testid="pricing-pro-cta"
               className="block text-center rounded-full bg-white text-rm-primary font-heading font-bold text-base px-6 py-3.5 hover:bg-rm-beige transition-all duration-300 shadow-lg"
             >

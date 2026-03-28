@@ -53,9 +53,7 @@ export default function FinalCTA() {
           <p className="mt-6 text-white/60 text-sm font-body">
             Already decided?{' '}
             <a
-              href="https://rzp.io/rzp/kGQ6Iujq"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/pro"
               className="text-white underline font-semibold hover:opacity-80 transition-opacity"
             >
               Go directly to Pro — ₹99/month →

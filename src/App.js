@@ -13,6 +13,7 @@ import B2BSection from "@/components/landing/B2BSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import AdminDashboard from "@/pages/AdminDashboard";
+import ProCheckout from "@/pages/ProCheckout";
 
 function LandingPage() {
   useScrollAnimation();
@@ -66,6 +67,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/pro" element={<ProCheckout />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </Router>
