@@ -1,8 +1,10 @@
 const STATS = [
-  '📱 853 Million Indians use WhatsApp daily',
+  '� 1,000+ reminders delivered by Indians',
+  '�📱 850 Million Indians use WhatsApp daily',
   '📬 98% WhatsApp open rate vs 20% email',
-  '⏰ 80% messages read within 5 minutes',
-  '🇮🇳 Zero competitors in India doing this',
+  '⏰ Setup in 30 seconds — no app download',
+  '🇮🇳 India ka pehla WhatsApp AI reminder',
+  '☕ Pro plan — chai se bhi sasta (₹3.3/day)',
 ];
 
 export default function StatsBar() {

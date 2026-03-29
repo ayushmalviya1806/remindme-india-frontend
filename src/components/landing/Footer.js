@@ -1,7 +1,7 @@
 import { Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const B2B_EMAIL = 'mailto:ayushmalviya1806@gmail.com?subject=B2B%20Inquiry';
+const B2B_EMAIL = 'mailto:hello.remindmeindia@gmail.com?subject=B2B%20Inquiry';
 
 const QUICK_LINKS = [
   { label: 'Features', href: '#features' },
@@ -12,7 +12,7 @@ const QUICK_LINKS = [
 ];
 
 const SUPPORT_LINKS = [
-  { label: 'Contact Support', href: 'mailto:ayushmalviya1806@gmail.com' },
+  { label: 'Contact Support', href: 'mailto:hello.remindmeindia@gmail.com' },
   { label: 'Privacy Policy', href: '#' },
   { label: 'Terms of Service', href: '#' },
 ];
@@ -34,7 +34,7 @@ export default function Footer() {
               The AI-powered WhatsApp assistant that makes sure you never forget anything important again.
             </p>
             <p className="text-xs text-white/25 font-body">
-              &copy; 2026 RemindMe India. Made with ❤️ in Indore, India 🇮🇳
+              &copy; 2026 RemindMe India. Made with ❤️ in Indore, India 🇮🇳 | Proudly Indian
             </p>
           </div>
 
@@ -88,7 +88,7 @@ export default function Footer() {
               className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body mb-4"
               data-testid="footer-email"
             >
-              ayushmalviya1806@gmail.com
+              hello.remindmeindia@gmail.com
             </a>
             <p className="text-xs text-white/25 font-body leading-relaxed">
               Powered by OpenAI GPT-4 + Meta WhatsApp API

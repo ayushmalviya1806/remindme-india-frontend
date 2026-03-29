@@ -71,7 +71,7 @@ export default function Pricing() {
             >
               Start Free Now →
             </a>
-            <p className="text-center text-xs text-rm-muted mt-3 font-body">Setup in 30 seconds</p>
+            <p className="text-center text-xs text-rm-muted mt-3 font-body">Setup in 30 seconds • 🔒 Data 100% private</p>
           </div>
 
           {/* Pro Card */}
@@ -120,7 +120,10 @@ export default function Pricing() {
               ☕ Pro lelo — Chai se sasta hai →
             </a>
             <p className="text-center text-xs text-white/50 mt-3 font-body">
-              🔒 Secured by Razorpay • UPI, Cards, NetBanking
+              🔒 Razorpay Secure Payments • UPI, Cards, NetBanking
+            </p>
+            <p className="text-center text-xs text-white/40 mt-1 font-body">
+              🇮🇳 Made in India • Aapka data safe hai
             </p>
           </div>
         </div>

@@ -206,7 +206,17 @@ export default function Hero() {
                 <span>✓ No app download</span>
                 <span>✓ No credit card</span>
                 <span>✓ Setup in 30 seconds</span>
+                <span>✓ Made in India 🇮🇳</span>
               </p>
+
+              {/* Live counter */}
+              <div className="flex items-center gap-2 mt-4">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                </span>
+                <span className="text-sm text-rm-muted font-body">1,000+ reminders delivered across India</span>
+              </div>
 
               {/* Secondary CTA */}
               <a

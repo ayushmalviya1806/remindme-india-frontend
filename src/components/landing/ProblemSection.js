@@ -58,6 +58,19 @@ export default function ProblemSection() {
         <p className="scroll-fade-up text-center mt-14 text-lg sm:text-xl font-heading font-bold text-rm-primary">
           RemindMe India yeh sab hone se pehle rok deta hai. Forever.
         </p>
+
+        {/* CTA after pain points */}
+        <div className="scroll-fade-up text-center mt-8">
+          <a
+            href="https://wa.me/916269915175?text=Hi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-base px-8 py-4 shadow-[0px_12px_32px_rgba(0,109,47,0.3)] hover:shadow-[0px_16px_40px_rgba(0,109,47,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
+          >
+            📱 Abhi Try Karo — Free Hai
+          </a>
+          <p className="mt-3 text-sm text-rm-muted font-body">Sirf 30 second. Koi app nahi. Koi signup nahi.</p>
+        </div>
       </div>
     </section>
   );

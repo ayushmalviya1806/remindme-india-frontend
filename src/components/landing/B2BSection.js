@@ -1,4 +1,4 @@
-const B2B_EMAIL = 'mailto:ayushmalviya1806@gmail.com?subject=B2B%20Inquiry';
+const B2B_EMAIL = 'mailto:hello.remindmeindia@gmail.com?subject=B2B%20Inquiry';
 
 const STATS = [
   { value: '60%', label: 'fewer no-shows' },

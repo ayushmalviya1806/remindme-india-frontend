@@ -17,6 +17,15 @@ const FEATURES = [
     body: 'Phone storage full? Koi problem nahi. WhatsApp ke andar hi kaam karta hai.',
   },
   {
+    span: 'col-span-1 md:col-span-2',
+    bg: 'bg-[#FFF8E1]',
+    textColor: 'text-rm-text',
+    icon: '🎤',
+    title: 'Voice Notes — Hindi mein bolo, reminder set!',
+    body: 'Type karne ka mann nahi? Bas voice note bhejo! "Shaam 6:30 baje gym jaana hai" — AI sunega, samjhega, aur time pe yaad dilayega. Hindi, Hinglish, English — sab chalega.',
+    hasDemo: false,
+  },
+  {
     span: 'col-span-1',
     bg: 'bg-rm-primary',
     textColor: 'text-white',
