@@ -28,13 +28,13 @@ export default function FinalCTA() {
 
       <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="scroll-fade-up font-heading font-extrabold text-white tracking-tight" style={{ fontSize: 'clamp(36px, 5vw, 56px)', lineHeight: 1.1 }}>
-          Ready ho?<br />
-          Abhi shuru karo — free mein!
+          Ek WhatsApp message.<br />
+          Bas. Kabhi kuch mat bhoolo.
         </h2>
 
         <p className="scroll-fade-up scroll-fade-up-delay-1 mt-6 text-lg sm:text-xl text-white/80 font-body max-w-md mx-auto leading-relaxed">
-          30 seconds. Koi credit card nahi. Koi app download nahi.<br />
-          Bas ek WhatsApp message.
+          30 second mein ready. Koi app nahi. Koi credit card nahi.<br />
+          Hindi, Hinglish, English — jo bolo, yaad rakhega.
         </p>
 
         <div className="scroll-fade-up scroll-fade-up-delay-2 mt-10">
@@ -45,7 +45,7 @@ export default function FinalCTA() {
             data-testid="final-cta-button"
             className="inline-flex items-center gap-2 rounded-full bg-white text-rm-primary font-heading font-bold text-xl px-10 py-5 shadow-[0px_16px_48px_rgba(0,0,0,0.2)] hover:shadow-[0px_20px_56px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300"
           >
-            💬 Start Free on WhatsApp Now →
+            � Abhi Hi Bolo — Free Hai →
           </a>
           <p className="mt-4 text-sm text-white/60 font-body">
             👆 Tap to open WhatsApp directly
@@ -56,7 +56,7 @@ export default function FinalCTA() {
               href="/pro"
               className="text-white underline font-semibold hover:opacity-80 transition-opacity"
             >
-              Go directly to Pro — ₹99/month →
+              Seedha Pro lelo — ₹99/month (Chai se sasta ☕) →
             </a>
           </p>
         </div>

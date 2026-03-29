@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import "@/App.css";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
 import Navbar from "@/components/landing/Navbar";
@@ -17,6 +18,34 @@ import ProCheckout from "@/pages/ProCheckout";
 
 function LandingPage() {
   useScrollAnimation();
+
+  const [showExitBanner, setShowExitBanner] = useState(false);
+  const [exitBannerShown, setExitBannerShown] = useState(false);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+    let maxScrollY = 0;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      
+      // Track maximum scroll position
+      if (currentY > maxScrollY) maxScrollY = currentY;
+      
+      // If user has scrolled down at least 500px and is now scrolling back up significantly
+      if (!exitBannerShown && maxScrollY > 500 && currentY < maxScrollY - 200 && currentY > 100) {
+        setShowExitBanner(true);
+        setExitBannerShown(true);
+        // Auto-hide after 8 seconds
+        setTimeout(() => setShowExitBanner(false), 8000);
+      }
+      
+      lastScrollY = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [exitBannerShown]);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FAF9F5' }}>
@@ -37,7 +66,7 @@ function LandingPage() {
         href="https://wa.me/916269915175?text=Hi"
         target="_blank"
         rel="noopener noreferrer"
-        className="hidden lg:flex"
+        className="hidden lg:flex wa-pulse"
         style={{
           position: 'fixed',
           bottom: '24px',
@@ -88,6 +117,70 @@ function LandingPage() {
       >
         � WhatsApp pe Start Karo — Free hai
       </a>
+    {/* Mobile Exit Intent Banner */}
+      {showExitBanner && (
+        <div
+          className="lg:hidden"
+          style={{
+            position: 'fixed',
+            bottom: '56px',
+            left: '12px',
+            right: '12px',
+            zIndex: 9998,
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '16px 20px',
+            boxShadow: '0px 12px 40px rgba(0,0,0,0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            animation: 'slideUp 0.4s ease-out',
+          }}
+        >
+          <div style={{ flex: 1 }}>
+            <p style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', fontWeight: '700', fontSize: '14px', color: '#1B1C1A', marginBottom: '2px' }}>
+              Ruko! Ek reminder try kar lo 🔔
+            </p>
+            <p style={{ fontSize: '12px', color: '#6B7280' }}>
+              Free hai. 30 second. Koi app nahi.
+            </p>
+          </div>
+          <a
+            href="https://wa.me/916269915175?text=Hi"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              backgroundColor: '#25D366',
+              color: 'white',
+              borderRadius: '12px',
+              padding: '10px 16px',
+              fontFamily: 'Plus Jakarta Sans, sans-serif',
+              fontWeight: '700',
+              fontSize: '13px',
+              textDecoration: 'none',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Hi bolo →
+          </a>
+          <button
+            onClick={() => setShowExitBanner(false)}
+            style={{
+              position: 'absolute',
+              top: '8px',
+              right: '8px',
+              background: 'none',
+              border: 'none',
+              fontSize: '16px',
+              color: '#9CA3AF',
+              cursor: 'pointer',
+              padding: '4px',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

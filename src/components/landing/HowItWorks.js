@@ -81,9 +81,9 @@ export default function HowItWorks() {
             data-testid="how-it-works-cta"
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-lg px-8 py-4 shadow-[0px_12px_32px_rgba(0,109,47,0.3)] hover:shadow-[0px_16px_40px_rgba(0,109,47,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
           >
-            💬 Try It Right Now — It's Free
+            � Abhi Try Karo — Free Hai
           </a>
-          <p className="mt-3 text-sm text-rm-muted font-body">Average setup time: 28 seconds</p>
+          <p className="mt-3 text-sm text-rm-muted font-body">Setup time: sirf 30 seconds ⚡</p>
         </div>
       </div>
     </section>
