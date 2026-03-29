@@ -4,7 +4,7 @@ const WA_LINK = 'https://wa.me/916269915175?text=Hi';
 const RAZORPAY_LINK = '/pro';
 
 const FREE_FEATURES = [
-  '10 reminders per month',
+  '10 free reminders',
   'Hindi + English + Hinglish',
   'WhatsApp notifications',
   'AI reminder extraction',
@@ -28,10 +28,10 @@ export default function Pricing() {
         {/* Header */}
         <div className="text-center mb-16 scroll-fade-up">
           <h2 className="font-heading font-extrabold text-4xl sm:text-5xl text-rm-text tracking-tight">
-            Seedha Simple Pricing
+            Kitna lagega?
           </h2>
           <p className="mt-4 text-base sm:text-lg text-rm-muted font-body">
-            Koi hidden charges nahi. Koi surprise nahi. Bas value.
+            Koi hidden charges nahi. Chai se bhi sasta. ☕
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default function Pricing() {
                 <span className="font-heading font-extrabold text-5xl text-rm-text">₹0</span>
                 <span className="text-rm-muted text-sm font-body">/month</span>
               </div>
-              <p className="text-sm text-rm-muted mt-2 font-body">7 din free • Koi credit card nahi</p>
+              <p className="text-sm text-rm-muted mt-2 font-body">Koi credit card nahi • 30 sec setup</p>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -92,11 +92,13 @@ export default function Pricing() {
 
             <div className="mb-6">
               <p className="text-white/60 text-sm font-body mb-1">PRO</p>
-              <div className="flex items-baseline gap-1">
+              <div className="flex items-baseline gap-2">
+                <span className="font-heading font-bold text-2xl text-white/40 line-through">₹199</span>
                 <span className="font-heading font-extrabold text-5xl text-white">₹99</span>
                 <span className="text-white/60 text-sm font-body">/month</span>
               </div>
-              <p className="text-sm text-white/60 mt-2 font-body">Pehle mahine ke baad. Cancel anytime.</p>
+              <p className="text-sm text-white/60 mt-2 font-body">= ₹3.3/day — chai se bhi sasta ☕</p>
+              <p className="text-sm text-white/40 mt-1 font-body">Cancel anytime. No lock-in.</p>
             </div>
 
             <div className="space-y-3 mb-8">
@@ -115,7 +117,7 @@ export default function Pricing() {
               data-testid="pricing-pro-cta"
               className="block text-center rounded-full bg-white text-rm-primary font-heading font-bold text-base px-6 py-3.5 hover:bg-rm-beige transition-all duration-300 shadow-lg"
             >
-              💳 Get Pro — ₹99/month →
+              ☕ Pro lelo — Chai se sasta hai →
             </a>
             <p className="text-center text-xs text-white/50 mt-3 font-body">
               🔒 Secured by Razorpay • UPI, Cards, NetBanking
@@ -123,8 +125,26 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* Objection crusher */}
-        <p className="scroll-fade-up text-center mt-12 text-base sm:text-lg text-rm-muted font-body max-w-lg mx-auto">
+        {/* Cost comparison box */}
+        <div className="scroll-fade-up max-w-2xl mx-auto mt-12 bg-white rounded-2xl p-6 shadow-sm">
+          <p className="text-center font-heading font-bold text-lg text-rm-text mb-4">Sochiye zara...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div className="p-3">
+              <p className="font-heading font-extrabold text-2xl text-red-500">₹500+</p>
+              <p className="text-sm text-rm-muted font-body mt-1">Ek missed appointment ka nuksaan</p>
+            </div>
+            <div className="p-3">
+              <p className="font-heading font-extrabold text-2xl text-red-500">₹500+</p>
+              <p className="text-sm text-rm-muted font-body mt-1">Ek late EMI ki penalty</p>
+            </div>
+            <div className="p-3">
+              <p className="font-heading font-extrabold text-2xl text-green-600">₹99</p>
+              <p className="text-sm text-rm-muted font-body mt-1">RemindMe Pro — poore mahine</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="scroll-fade-up text-center mt-8 text-base sm:text-lg text-rm-muted font-body max-w-lg mx-auto">
           💬 "Pehle free try karo. Pasand aaye toh Pro lo. Pasand na aaye toh kuch nahi."
         </p>
       </div>

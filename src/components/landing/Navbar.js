@@ -73,7 +73,7 @@ export default function Navbar() {
             data-testid="nav-cta-button"
             className="hidden lg:inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-2.5 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
           >
-            Try Free on WhatsApp
+            📱 Free mein Try Karo
             <span className="text-base">→</span>
           </a>
 
@@ -126,7 +126,7 @@ export default function Navbar() {
             data-testid="mobile-cta-button"
             className="block mt-3 text-center rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-3 shadow-lg"
           >
-            Try Free on WhatsApp →
+            📱 Free mein Try Karo →
           </a>
         </div>
       </div>

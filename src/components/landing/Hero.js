@@ -167,19 +167,19 @@ export default function Hero() {
             {/* Badge */}
             <div className="scroll-fade-up inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8" style={{ backgroundColor: '#E8F5E9' }}>
               <span className="text-sm font-medium text-rm-primary font-body">
-                ⚡ India's First WhatsApp AI Reminder • Powered by GPT-4
+                🔥 1,000+ reminders delivered • Powered by GPT-4 AI
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="scroll-fade-up scroll-fade-up-delay-1 font-heading font-extrabold tracking-tight text-rm-text" style={{ fontSize: 'clamp(48px, 6vw, 72px)', lineHeight: 1.05 }}>
-              Bhoolna<br />
-              <span className="text-rm-green">Mana Hai!</span>
+            <h1 className="scroll-fade-up scroll-fade-up-delay-1 font-heading font-extrabold tracking-tight text-rm-text" style={{ fontSize: 'clamp(42px, 5.5vw, 64px)', lineHeight: 1.1 }}>
+              WhatsApp pe bolo,<br />
+              <span className="text-rm-green">yaad dila dega.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="scroll-fade-up scroll-fade-up-delay-2 mt-6 text-xl sm:text-2xl font-heading font-semibold text-rm-primary">
-              Just WhatsApp karo — AI baaki sab kuch karega
+              India ka pehla AI reminder — Hindi, Hinglish, English. No app download.
             </p>
 
             {/* Body */}
@@ -196,7 +196,7 @@ export default function Hero() {
                 data-testid="hero-cta-button"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-lg px-8 py-4 shadow-[0px_12px_32px_rgba(0,109,47,0.3)] hover:shadow-[0px_16px_40px_rgba(0,109,47,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
               >
-                💬 Start Free on WhatsApp
+                � WhatsApp pe Start Karo — Free hai
                 <span>→</span>
               </a>
 
@@ -214,7 +214,7 @@ export default function Hero() {
                 data-testid="hero-secondary-cta"
                 className="inline-flex items-center gap-2 rounded-full bg-transparent text-rm-primary border-2 border-rm-primary font-heading font-bold text-sm px-6 py-3 hover:bg-rm-surface transition-all duration-300 mt-1"
               >
-                See how it works ↓
+                Kaise kaam karta hai? ↓
               </a>
             </div>
           </div>

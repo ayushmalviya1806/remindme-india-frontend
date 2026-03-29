@@ -1,27 +1,27 @@
 const TESTIMONIALS = [
   {
     stars: 5,
-    quote: 'Pehli baar poore saal koi EMI miss nahi hui. ₹1,200 late fee bachaya. Yeh app meri zindagi mein rehna chahiye.',
-    name: 'Rahul S.',
-    role: 'Tech Lead, Bengaluru',
-    initials: 'RS',
+    quote: 'Voice note mein bola "shaam 6:30 baje gym" aur sach mein 6:30 pe WhatsApp pe reminder aa gaya. No app download, bas WhatsApp. Kamaal hai!',
+    name: 'Piyush M.',
+    role: 'Pro User, Indore',
+    initials: 'PM',
     color: 'bg-blue-500',
   },
   {
     stars: 5,
-    quote: 'Mere parents ke liye medicine reminders set kiye. Hinglish mein type karta hoon, perfectly samjhta hai. Koi app nahi sikhana pada unhe — WhatsApp toh pehle se aata hai.',
-    name: 'Priya K.',
-    role: 'Mumbai',
-    initials: 'PK',
-    color: 'bg-purple-500',
+    quote: 'Mummy ke liye daily medicine reminder set kiya — Hindi mein. Ab roz time pe yaad aa jaata hai. Unhone koi naya app nahi seekha — WhatsApp toh pehle se chalati hain!',
+    name: 'Ayush M.',
+    role: 'Founder & User, Indore',
+    initials: 'AM',
+    color: 'bg-emerald-500',
   },
   {
     stars: 5,
-    quote: 'Clinic mein patient no-shows 60% kam ho gaye. Har appointment ke liye automatically WhatsApp reminder jaata hai. Game changer for my practice.',
-    name: 'Dr. Ashish Mehta',
-    role: 'Pediatrician, Indore',
-    initials: 'AM',
-    color: 'bg-emerald-500',
+    quote: 'EMI bhoolne ki aadat thi, ₹500 late fee lag jaati thi har mahine. Ab har mahine 5 tareekh ko reminder aa jaata hai. Ek saal mein ₹6,000 bachaya!',
+    name: 'Dollar M.',
+    role: 'Pro User, Indore',
+    initials: 'DM',
+    color: 'bg-purple-500',
   },
 ];
 
@@ -51,7 +51,7 @@ export default function SocialProof() {
         {/* Header */}
         <div className="text-center mb-16 scroll-fade-up">
           <h2 className="font-heading font-extrabold text-4xl sm:text-5xl text-rm-text tracking-tight">
-            Indians Ka Bharosa
+            Log kya keh rahe hain
           </h2>
         </div>
 
