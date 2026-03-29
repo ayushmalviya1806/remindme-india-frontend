@@ -1,4 +1,6 @@
-const B2B_EMAIL = 'mailto:hello.remindmeindia@gmail.com?subject=B2B%20Inquiry';
+const B2B_WHATSAPP = 'https://wa.me/916269915175?text=' + encodeURIComponent(
+  `Hi, I'm interested in RemindMe India for my business.\n\nBusiness type: \nCity: ` 
+);
 
 const STATS = [
   { value: '60%', label: 'fewer no-shows' },
@@ -52,11 +54,13 @@ export default function B2BSection() {
             </div>
 
             <a
-              href={B2B_EMAIL}
+              href={B2B_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
               data-testid="b2b-cta"
               className="inline-flex items-center gap-2 rounded-full bg-white text-rm-primary font-heading font-bold text-base px-8 py-4 hover:bg-rm-beige transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
             >
-              Contact for B2B Plans →
+              💬 WhatsApp pe Baat Karo →
             </a>
           </div>
 

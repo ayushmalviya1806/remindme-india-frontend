@@ -1,7 +1,9 @@
 import { Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const B2B_EMAIL = 'mailto:hello.remindmeindia@gmail.com?subject=B2B%20Inquiry';
+const B2B_WHATSAPP = 'https://wa.me/916269915175?text=' + encodeURIComponent(
+  `Hi, I'm interested in RemindMe India for my business.\n\nBusiness type: \nCity: ` 
+);
 
 const QUICK_LINKS = [
   { label: 'Features', href: '#features' },
@@ -84,11 +86,19 @@ export default function Footer() {
           <div>
             <h4 className="font-heading font-bold text-sm text-white/80 mb-4 uppercase tracking-wider">Contact</h4>
             <a
-              href={B2B_EMAIL}
+              href={B2B_WHATSAPP}
+              target="_blank"
+              rel="noopener noreferrer"
               className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body mb-4"
               data-testid="footer-email"
             >
-              hello.remindmeindia@gmail.com
+              💬 WhatsApp pe contact karein
+            </a>
+            <a
+              href="mailto:hello.remindmeindia@gmail.com"
+              className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body mb-4"
+            >
+              📧 hello.remindmeindia@gmail.com
             </a>
             <p className="text-xs text-white/25 font-body leading-relaxed">
               Powered by OpenAI GPT-4 + Meta WhatsApp API
