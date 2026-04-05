@@ -299,6 +299,9 @@ export default function ProCheckout() {
             <span className="flex items-center gap-1"><Shield className="w-3 h-3" /> Secured by Razorpay</span>
             <span>UPI • Cards • NetBanking</span>
           </div>
+          <p className="text-sm text-gray-500 mt-2">
+            🎓 Student discount? WhatsApp pe STUDENT50 type karo!
+          </p>
         </div>
 
         <a href="/" className="block text-center mt-6 text-sm text-gray-400 hover:text-gray-600">← Back to RemindMe India</a>

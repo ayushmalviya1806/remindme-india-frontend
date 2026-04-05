@@ -122,6 +122,9 @@ export default function Pricing() {
             <p className="text-center text-xs text-white/50 mt-3 font-body">
               🔒 Razorpay Secure Payments • UPI, Cards, NetBanking
             </p>
+            <p className="text-sm text-gray-500 mt-2">
+              🎓 Student? WhatsApp pe <strong>STUDENT50</strong> type karo — sirf ₹49 first month!
+            </p>
             <p className="text-center text-xs text-white/40 mt-1 font-body">
               🇮🇳 Made in India • Aapka data safe hai
             </p>
