@@ -151,7 +151,9 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Pro Users</p>
               <p className="text-3xl font-bold" style={{ color: '#25D366' }}>{stats.users.pro}</p>
-              <p className="text-xs text-gray-400 mt-1">₹{stats.revenue.monthly}/month revenue</p>
+              <p className="text-xs text-gray-400 mt-1">
+                💳 {stats.users.paidPro || 0} paid · 🎁 {stats.users.referralPro || 0} referral
+              </p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Reminders Sent</p>
@@ -287,6 +289,20 @@ export default function AdminDashboard() {
                   <span className="text-gray-600">Pro Users 🌟</span>
                   <span className="font-bold text-green-600">{stats.users.pro}</span>
                 </div>
+                <div className="flex justify-between items-center pl-4">
+                  <span className="text-gray-400 text-sm">💳 Paid Pro</span>
+                  <span className="font-bold text-green-700">{stats.users.paidPro || 0}</span>
+                </div>
+                <div className="flex justify-between items-center pl-4">
+                  <span className="text-gray-400 text-sm">🎁 Referral Pro</span>
+                  <span className="font-bold text-orange-500">{stats.users.referralPro || 0}</span>
+                </div>
+                {(stats.users.adminPro || 0) > 0 && (
+                  <div className="flex justify-between items-center pl-4">
+                    <span className="text-gray-400 text-sm">🔧 Admin Pro</span>
+                    <span className="font-bold text-gray-500">{stats.users.adminPro}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Free Users</span>
                   <span className="font-bold">{stats.users.free}</span>
@@ -326,20 +342,29 @@ export default function AdminDashboard() {
 
             <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
               <h3 className="font-bold text-gray-800 mb-4">💰 Revenue</h3>
-              <div className="flex items-center gap-8">
+              <div className="flex flex-wrap items-center gap-8">
                 <div>
                   <p className="text-gray-500 text-sm">Monthly Revenue</p>
                   <p className="text-4xl font-bold text-green-600">₹{stats.revenue.monthly}</p>
+                  <p className="text-xs text-gray-400 mt-1">{stats.users.paidPro || 0} paying users × ₹99</p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Annual Run Rate</p>
                   <p className="text-4xl font-bold text-purple-600">₹{stats.revenue.monthly * 12}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500 text-sm">Pro Conversion</p>
+                  <p className="text-gray-500 text-sm">Paid Conversion</p>
                   <p className="text-4xl font-bold text-blue-600">
+                    {stats.users.total > 0 ? Math.round(((stats.users.paidPro || 0) / stats.users.total) * 100) : 0}%
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">paid only (excl. referral)</p>
+                </div>
+                <div>
+                  <p className="text-gray-500 text-sm">Total Pro %</p>
+                  <p className="text-4xl font-bold text-orange-500">
                     {stats.users.total > 0 ? Math.round((stats.users.pro / stats.users.total) * 100) : 0}%
                   </p>
+                  <p className="text-xs text-gray-400 mt-1">paid + referral</p>
                 </div>
               </div>
             </div>
