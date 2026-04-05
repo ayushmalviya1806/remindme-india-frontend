@@ -4,7 +4,7 @@ const WA_LINK = 'https://wa.me/916269915175?text=Hi';
 const RAZORPAY_LINK = '/pro';
 
 const FREE_FEATURES = [
-  '10 free reminders',
+  '5 free reminders/month',
   'Hindi + English + Hinglish',
   'WhatsApp notifications',
   'AI reminder extraction',
