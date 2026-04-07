@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Bell, Users, Clock, TrendingUp, RefreshCw, Lock, CheckCircle, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, RefreshCw, Lock } from 'lucide-react';
 
 const API_BASE = 'https://remindme-india.onrender.com/api/admin';
 
@@ -13,6 +13,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [activatePhone, setActivatePhone] = useState('');
   const [activateMsg, setActivateMsg] = useState('');
+  const [userFilter, setUserFilter] = useState('all');
+  const [searchPhone, setSearchPhone] = useState('');
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const fetchData = async (adminSecret) => {
     setLoading(true);
@@ -23,18 +26,14 @@ export default function AdminDashboard() {
         fetch(`${API_BASE}/users`, { headers }),
         fetch(`${API_BASE}/reminders`, { headers })
       ]);
-
       if (statsRes.status === 401) {
         alert('Wrong password!');
         setLoading(false);
         return false;
       }
-
-      const statsData = await statsRes.json();
+      setStats(await statsRes.json());
       const usersData = await usersRes.json();
       const remindersData = await remindersRes.json();
-
-      setStats(statsData);
       setUsers(usersData.users || []);
       setReminders(remindersData.reminders || []);
       setAuthenticated(true);
@@ -56,8 +55,11 @@ export default function AdminDashboard() {
     try {
       const res = await fetch(`${API_BASE}/activate-pro`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: activatePhone, secret })
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        },
+        body: JSON.stringify({ phone: activatePhone })
       });
       const data = await res.json();
       if (data.success) {
@@ -87,6 +89,12 @@ export default function AdminDashboard() {
       hour: '2-digit', minute: '2-digit', hour12: true
     });
   };
+
+  const filteredUsers = users.filter(u => {
+    const matchesPlan = userFilter === 'all' ? true : userFilter === 'pro' ? u.plan === 'PRO' : u.plan !== 'PRO';
+    const matchesSearch = searchPhone.trim() === '' ? true : u.whatsapp_phone_number.includes(searchPhone.trim());
+    return matchesPlan && matchesSearch;
+  });
 
   if (!authenticated) {
     return (
@@ -125,6 +133,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#FAF9F5' }}>
+
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-2">
@@ -140,6 +149,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -151,9 +161,7 @@ export default function AdminDashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Pro Users</p>
               <p className="text-3xl font-bold" style={{ color: '#25D366' }}>{stats.users.pro}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                💳 {stats.users.paidPro || 0} paid · 🎁 {stats.users.referralPro || 0} referral
-              </p>
+              <p className="text-xs text-gray-400 mt-1">💳 {stats.users.paidPro || 0} paid · 🎁 {stats.users.referralPro || 0} referral</p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <p className="text-sm text-gray-500 mb-1">Reminders Sent</p>
@@ -169,15 +177,13 @@ export default function AdminDashboard() {
         )}
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           {['overview', 'users', 'reminders', 'activate'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
-                activeTab === tab
-                  ? 'text-white shadow-sm'
-                  : 'bg-white text-gray-600 border border-gray-200'
+                activeTab === tab ? 'text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
               }`}
               style={activeTab === tab ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
             >
@@ -186,157 +192,32 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Users Tab */}
-        {activeTab === 'users' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800">All Users ({users.length})</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Phone</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Name</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Plan</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Reminders</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Joined</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user, i) => (
-                    <tr key={user.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm font-mono">{user.whatsapp_phone_number}</td>
-                      <td className="px-4 py-3 text-sm">{user.name || 'Unknown'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          user.plan === 'PRO'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {user.plan}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className="text-green-600">{user.sentReminders} sent</span>
-                        {' · '}
-                        <span className="text-blue-600">{user.pendingReminders} pending</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(user.created_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Reminders Tab */}
-        {activeTab === 'reminders' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800">Recent Reminders ({reminders.length})</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Title</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">User</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Type</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Next Send</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reminders.map((reminder, i) => (
-                    <tr key={reminder.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm font-medium">{reminder.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{reminder.user?.whatsapp_phone_number}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          reminder.status === 'SENT' ? 'bg-green-100 text-green-700' :
-                          reminder.status === 'PENDING' ? 'bg-blue-100 text-blue-700' :
-                          reminder.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {reminder.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        {reminder.is_recurring ? `🔁 ${reminder.frequency}` : '1x'}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatIST(reminder.next_send_at)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Overview Tab */}
+        {/* ═══ OVERVIEW TAB ═══ */}
         {activeTab === 'overview' && stats && (
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 mb-4">👥 User Breakdown</h3>
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Users</span>
-                  <span className="font-bold">{stats.users.total}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Pro Users 🌟</span>
-                  <span className="font-bold text-green-600">{stats.users.pro}</span>
-                </div>
-                <div className="flex justify-between items-center pl-4">
-                  <span className="text-gray-400 text-sm">💳 Paid Pro</span>
-                  <span className="font-bold text-green-700">{stats.users.paidPro || 0}</span>
-                </div>
-                <div className="flex justify-between items-center pl-4">
-                  <span className="text-gray-400 text-sm">🎁 Referral Pro</span>
-                  <span className="font-bold text-orange-500">{stats.users.referralPro || 0}</span>
-                </div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Total Users</span><span className="font-bold">{stats.users.total}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Pro Users 🌟</span><span className="font-bold text-green-600">{stats.users.pro}</span></div>
+                <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">💳 Paid Pro</span><span className="font-bold text-green-700">{stats.users.paidPro || 0}</span></div>
+                <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">🎁 Referral Pro</span><span className="font-bold text-orange-500">{stats.users.referralPro || 0}</span></div>
                 {(stats.users.adminPro || 0) > 0 && (
-                  <div className="flex justify-between items-center pl-4">
-                    <span className="text-gray-400 text-sm">🔧 Admin Pro</span>
-                    <span className="font-bold text-gray-500">{stats.users.adminPro}</span>
-                  </div>
+                  <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">🔧 Admin Pro</span><span className="font-bold text-gray-500">{stats.users.adminPro}</span></div>
                 )}
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Free Users</span>
-                  <span className="font-bold">{stats.users.free}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">New Today</span>
-                  <span className="font-bold text-blue-600">{stats.users.newToday}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">New This Week</span>
-                  <span className="font-bold text-purple-600">{stats.users.newThisWeek}</span>
-                </div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Free Users</span><span className="font-bold">{stats.users.free}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">New Today</span><span className="font-bold text-blue-600">{stats.users.newToday}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">New This Week</span><span className="font-bold text-purple-600">{stats.users.newThisWeek}</span></div>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm">
               <h3 className="font-bold text-gray-800 mb-4">🔔 Reminder Stats</h3>
               <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Total Created</span>
-                  <span className="font-bold">{stats.reminders.total}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Successfully Sent ✅</span>
-                  <span className="font-bold text-green-600">{stats.reminders.sent}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Pending ⏳</span>
-                  <span className="font-bold text-blue-600">{stats.reminders.pending}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Created Today</span>
-                  <span className="font-bold text-orange-600">{stats.reminders.createdToday}</span>
-                </div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Total Created</span><span className="font-bold">{stats.reminders.total}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Successfully Sent ✅</span><span className="font-bold text-green-600">{stats.reminders.sent}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Pending ⏳</span><span className="font-bold text-blue-600">{stats.reminders.pending}</span></div>
+                <div className="flex justify-between items-center"><span className="text-gray-600">Created Today</span><span className="font-bold text-orange-600">{stats.reminders.createdToday}</span></div>
               </div>
             </div>
 
@@ -371,7 +252,131 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Activate Pro Tab */}
+        {/* ═══ USERS TAB ═══ */}
+        {activeTab === 'users' && (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            {/* Filter + Search Header */}
+            <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+              <h2 className="font-bold text-gray-800 mr-2">Users ({filteredUsers.length})</h2>
+              <div className="flex gap-2">
+                {[
+                  { key: 'all', label: 'All' },
+                  { key: 'pro', label: '🌟 Pro Only' },
+                  { key: 'free', label: 'Free Only' }
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setUserFilter(f.key)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                      userFilter === f.key ? 'text-white' : 'bg-gray-100 text-gray-600'
+                    }`}
+                    style={userFilter === f.key ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                placeholder="🔍 Search phone number..."
+                value={searchPhone}
+                onChange={(e) => setSearchPhone(e.target.value)}
+                className="ml-auto border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 w-56"
+              />
+            </div>
+
+            {/* Users Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Phone</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Name</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Plan</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Reminders</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user, i) => (
+                    <tr
+                      key={user.id}
+                      className={`cursor-pointer hover:bg-green-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      <td className="px-4 py-3 text-sm font-mono">{user.whatsapp_phone_number}</td>
+                      <td className="px-4 py-3 text-sm">{user.name || 'Unknown'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          user.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {user.plan}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span className="text-green-600">{user.sentReminders} sent</span>
+                        {' · '}
+                        <span className="text-blue-600">{user.pendingReminders} pending</span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(user.created_at)}</td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
+                        No users found matching your filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ REMINDERS TAB ═══ */}
+        {activeTab === 'reminders' && (
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100">
+              <h2 className="font-bold text-gray-800">Recent Reminders ({reminders.length})</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Title</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">User</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Type</th>
+                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Next Send</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reminders.map((reminder, i) => (
+                    <tr key={reminder.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-4 py-3 text-sm font-medium">{reminder.title}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{reminder.user?.whatsapp_phone_number}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          reminder.status === 'SENT' ? 'bg-green-100 text-green-700' :
+                          reminder.status === 'PENDING' ? 'bg-blue-100 text-blue-700' :
+                          reminder.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {reminder.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm">{reminder.is_recurring ? `🔁 ${reminder.frequency}` : '1x'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{formatIST(reminder.next_send_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ═══ ACTIVATE PRO TAB ═══ */}
         {activeTab === 'activate' && (
           <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md">
             <h2 className="font-bold text-gray-800 mb-4">⚡ Activate Pro Plan</h2>
@@ -399,7 +404,54 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
       </div>
+
+      {/* ═══ USER DETAIL MODAL ═══ */}
+      {selectedUser && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 shadow-xl w-full max-w-md mx-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg text-gray-800">👤 User Details</h3>
+              <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none">×</button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="font-bold">{selectedUser.name || 'Unknown'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-mono font-bold text-sm">{selectedUser.whatsapp_phone_number}</span></div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500">Plan</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {selectedUser.plan}
+                </span>
+              </div>
+              <div className="flex justify-between"><span className="text-gray-500">Reminders Sent</span><span className="font-bold text-green-600">{selectedUser.sentReminders}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Pending</span><span className="font-bold text-blue-600">{selectedUser.pendingReminders}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Pro Expires</span><span className="font-bold text-sm">{formatDate(selectedUser.plan_expires_at)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Joined</span><span className="font-bold text-sm">{formatDate(selectedUser.created_at)}</span></div>
+              <div className="pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setActivatePhone(selectedUser.whatsapp_phone_number);
+                    setActiveTab('activate');
+                    setSelectedUser(null);
+                  }}
+                  className="w-full py-2 rounded-xl text-white text-sm font-bold"
+                  style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+                >
+                  ⚡ Activate Pro for this user
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
