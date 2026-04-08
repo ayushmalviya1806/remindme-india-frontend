@@ -35,6 +35,13 @@ export default function AdminDashboard() {
     message: '',
     businessId: ''
   });
+  const [addMemberForm, setAddMemberForm] = useState({
+    businessId: '',
+    memberWhatsapp: '',
+    memberName: '',
+    subscriptionEndDate: ''
+  });
+  const [addMemberMsg, setAddMemberMsg] = useState('');
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -712,6 +719,122 @@ const fetchData = async (adminSecret) => {
               >
                 Send Message
               </button>
+            </div>
+
+            {/* Add Member Form */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-bold text-gray-800 mb-4">
+                <span className="text-2xl mr-2">+</span>Add Member to Business
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Add a member directly - no Supabase needed. 
+                They'll get a WhatsApp welcome message automatically.
+              </p>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Business
+                  </label>
+                  <select
+                    value={addMemberForm.businessId}
+                    onChange={(e) => setAddMemberForm({
+                      ...addMemberForm, businessId: e.target.value
+                    })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  >
+                    <option value="">Select Business</option>
+                    {businesses.map(b => (
+                      <option key={b.id} value={b.id}>{b.businessName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Member WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    value={addMemberForm.memberWhatsapp}
+                    onChange={(e) => setAddMemberForm({
+                      ...addMemberForm, memberWhatsapp: e.target.value
+                    })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="919876543210"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Member Name (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={addMemberForm.memberName}
+                    onChange={(e) => setAddMemberForm({
+                      ...addMemberForm, memberName: e.target.value
+                    })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="Rahul Sharma"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Subscription End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={addMemberForm.subscriptionEndDate}
+                    onChange={(e) => setAddMemberForm({
+                      ...addMemberForm, subscriptionEndDate: e.target.value
+                    })}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!addMemberForm.businessId || !addMemberForm.memberWhatsapp) {
+                    setAddMemberMsg('Business and WhatsApp number required');
+                    return;
+                  }
+                  try {
+                    const res = await fetch(`${B2B_BASE}/members/add`, {
+                      method: 'POST',
+                      headers: {
+                        'x-admin-secret': secret,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify(addMemberForm)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setAddMemberMsg('Member added! Welcome WhatsApp sent.');
+                      setAddMemberForm({
+                        businessId: '',
+                        memberWhatsapp: '',
+                        memberName: '',
+                        subscriptionEndDate: ''
+                      });
+                      fetchData(secret);
+                    } else {
+                      setAddMemberMsg(`Failed: ${data.error}`);
+                    }
+                  } catch (error) {
+                    setAddMemberMsg('Error adding member');
+                  }
+                }}
+                disabled={!addMemberForm.businessId || !addMemberForm.memberWhatsapp}
+                className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              >
+                Add Member & Send Welcome WhatsApp <span className="ml-2">{'>'}</span>
+              </button>
+              {addMemberMsg && (
+                <p className={`mt-3 text-sm font-medium ${
+                  addMemberMsg.includes('sent') ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {addMemberMsg}
+                </p>
+              )}
             </div>
           </div>
         )}
