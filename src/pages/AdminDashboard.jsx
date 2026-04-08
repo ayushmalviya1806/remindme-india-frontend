@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Bell, RefreshCw, Lock } from 'lucide-react';
 
 const API_BASE = 'https://remindme-india.onrender.com/api/admin';
+const B2B_BASE = 'https://remindme-india.onrender.com/api/business';
 
 export default function AdminDashboard() {
   const [secret, setSecret] = useState('');
@@ -17,16 +18,79 @@ export default function AdminDashboard() {
   const [searchPhone, setSearchPhone] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
 
-  const fetchData = async (adminSecret) => {
+  // B2B Business states
+  const [businesses, setBusinesses] = useState([]);
+  const [businessMembers, setBusinessMembers] = useState([]);
+  const [selectedBusiness, setSelectedBusiness] = useState(null);
+  const [showMemberList, setShowMemberList] = useState(false);
+  const [businessForm, setBusinessForm] = useState({
+    businessName: '',
+    ownerWhatsapp: '',
+    industryType: 'gym',
+    plan: 'small'
+  });
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [individualMessage, setIndividualMessage] = useState({
+    memberWhatsapp: '',
+    message: '',
+    businessId: ''
+  });
+
+  const sendBulkMessage = async (businessId, message) => {
+    if (!secret) {
+      alert('Please login first');
+      return;
+    }
+    if (!message.trim()) {
+      alert('Please enter a message');
+      return;
+    }
+    try {
+      const headers = { 'x-admin-secret': secret };
+      const res = await fetch(`${B2B_BASE}/send-bulk`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ businessId, message })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`✅ Message sent to ${data.sent} members (${data.failed} failed)`);
+        setBulkMessage('');
+        fetchData(secret);
+      } else {
+        alert(`❌ Failed: ${data.error}`);
+      }
+    } catch (error) {
+      alert('❌ Error sending bulk message');
+    }
+  };
+
+  const fetchBusinessMembers = async (businessId) => {
+  if (!secret) return;
+  try {
+    const headers = { 'x-admin-secret': secret };
+    const res = await fetch(`${B2B_BASE}/${businessId}/members`, { headers });
+    const data = await res.json();
+    setBusinessMembers(data.members || []);
+  } catch (error) {
+    console.error('Failed to fetch business members:', error);
+  }
+};
+
+const fetchData = async (adminSecret) => {
     setLoading(true);
     try {
       const headers = { 'x-admin-secret': adminSecret };
-      const [statsRes, usersRes, remindersRes] = await Promise.all([
+      const [statsRes, usersRes, remindersRes, businessRes] = await Promise.all([
         fetch(`${API_BASE}/stats`, { headers }),
         fetch(`${API_BASE}/users`, { headers }),
-        fetch(`${API_BASE}/reminders`, { headers })
+        fetch(`${API_BASE}/reminders`, { headers }),
+        fetch(`${B2B_BASE}/list`, { headers })
       ]);
-      if (statsRes.status === 401) {
+      if (statsRes.status === 401 || businessRes.status === 401) {
         alert('Wrong password!');
         setLoading(false);
         return false;
@@ -34,8 +98,10 @@ export default function AdminDashboard() {
       setStats(await statsRes.json());
       const usersData = await usersRes.json();
       const remindersData = await remindersRes.json();
+      const businessData = await businessRes.json();
       setUsers(usersData.users || []);
       setReminders(remindersData.reminders || []);
+      setBusinesses(businessData.businesses || []);
       setAuthenticated(true);
       setLoading(false);
       return true;
@@ -178,7 +244,7 @@ export default function AdminDashboard() {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {['overview', 'users', 'reminders', 'activate'].map(tab => (
+          {['overview', 'users', 'reminders', 'activate', 'business'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -405,53 +471,299 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Business Tab */}
+        {activeTab === 'business' && (
+          <div className="space-y-6">
+
+            {/* Create Business Form */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-bold text-gray-800 mb-4">Create New Business</h2>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                  <input
+                    type="text"
+                    value={businessForm.businessName}
+                    onChange={(e) => setBusinessForm({...businessForm, businessName: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="Fitness First Gym"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Owner WhatsApp</label>
+                  <input
+                    type="text"
+                    value={businessForm.ownerWhatsapp}
+                    onChange={(e) => setBusinessForm({...businessForm, ownerWhatsapp: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="917470578178"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry Type</label>
+                  <select
+                    value={businessForm.industryType}
+                    onChange={(e) => setBusinessForm({...businessForm, industryType: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  >
+                    <option value="gym">Gym</option>
+                    <option value="clinic">Clinic</option>
+                    <option value="coaching">Coaching</option>
+                    <option value="salon">Salon</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+                  <select
+                    value={businessForm.plan}
+                    onChange={(e) => setBusinessForm({...businessForm, plan: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  >
+                    <option value="small">Small - 999/month (100 customers)</option>
+                    <option value="professional">Professional - 1999/month (500 customers)</option>
+                    <option value="enterprise">Enterprise - 2999/month (unlimited)</option>
+                  </select>
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  const headers = { 'x-admin-secret': secret };
+                  try {
+                    const res = await fetch(`${B2B_BASE}/create`, {
+                      method: 'POST',
+                      headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify(businessForm)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert(`✅ Business created! Code: ${data.business.businessCode}\nWelcome WhatsApp sent to owner.`);
+                      setBusinessForm({
+                        businessName: '',
+                        ownerWhatsapp: '',
+                        industryType: 'gym',
+                        plan: 'small'
+                      });
+                      fetchData(secret);
+                    } else {
+                      alert(`❌ Failed: ${data.error}`);
+                    }
+                  } catch (error) {
+                    alert('❌ Error creating business');
+                  }
+                }}
+                disabled={!secret || !businessForm.businessName || !businessForm.ownerWhatsapp}
+                className="w-full py-3 rounded-xl text-white font-bold transition-all"
+                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              >
+                Create Business & Send Welcome WhatsApp
+              </button>
+            </div>
+
+            {/* Business List Table */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h2 className="font-bold text-gray-800">All Businesses ({businesses.length})</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Business Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Industry</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Members</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {businesses.map((business, i) => (
+                      <tr key={business.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3 text-sm">{business.businessName}</td>
+                        <td className="px-4 py-3 text-sm">{business.industryType || '-'}</td>
+                        <td className="px-4 py-3 text-sm">{business.plan}</td>
+                        <td className="px-4 py-3 text-sm font-bold">{business.memberCount || 0}</td>
+                        <td className="px-4 py-3 text-sm font-mono">{business.businessCode}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            business.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {business.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                setSelectedBusiness(business);
+                                fetchBusinessMembers(business.id);
+                              }}
+                              className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
+                            >
+                              View Members
+                            </button>
+                            <button
+                              onClick={() => {
+                                const message = prompt('Enter bulk message:');
+                                if (message) {
+                                  sendBulkMessage(business.id, message);
+                                }
+                              }}
+                              className="px-3 py-1 bg-purple-500 text-white rounded-lg text-xs hover:bg-purple-600"
+                            >
+                              Send Bulk
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Deactivate ${business.businessName}?`)) {
+                                  const headers = { 'x-admin-secret': secret };
+                                  await fetch(`${B2B_BASE}/${business.id}`, {
+                                    method: 'DELETE',
+                                    headers
+                                  });
+                                  fetchData(secret);
+                                }
+                              }}
+                              className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600"
+                            >
+                              Deactivate
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Send Reminder to Any Member */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-bold text-gray-800 mb-4">📤 Send Reminder to Member</h2>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Business</label>
+                  <select
+                    value={individualMessage.businessId}
+                    onChange={(e) => setIndividualMessage({...individualMessage, businessId: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  >
+                    <option value="">Select Business</option>
+                    {businesses.map(business => (
+                      <option key={business.id} value={business.id}>{business.businessName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Member WhatsApp</label>
+                  <input
+                    type="text"
+                    value={individualMessage.memberWhatsapp}
+                    onChange={(e) => setIndividualMessage({...individualMessage, memberWhatsapp: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="916269915175"
+                  />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea
+                  value={individualMessage.message}
+                  onChange={(e) => setIndividualMessage({...individualMessage, message: e.target.value})}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  rows={4}
+                  placeholder="Enter message..."
+                />
+              </div>
+              <button
+                onClick={async () => {
+                  if (!individualMessage.memberWhatsapp || !individualMessage.message || !individualMessage.businessId) {
+                    alert('Please fill all fields');
+                    return;
+                  }
+                  const headers = { 'x-admin-secret': secret };
+                  try {
+                    const res = await fetch(`${B2B_BASE}/send-reminder`, {
+                      method: 'POST',
+                      headers: {
+                        ...headers,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify(individualMessage)
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      alert('✅ Message sent successfully!');
+                      setIndividualMessage({ memberWhatsapp: '', message: '', businessId: '' });
+                    } else {
+                      alert(`❌ Failed: ${data.error}`);
+                    }
+                  } catch (error) {
+                    alert('❌ Error sending message');
+                  }
+                }}
+                className="w-full py-3 rounded-xl text-white font-bold transition-all"
+                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              >
+                Send Message
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ═══ USER DETAIL MODAL ═══ */}
-      {selectedUser && (
+      {/* Member List Modal */}
+      {showMemberList && selectedBusiness && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
-          onClick={() => setSelectedUser(null)}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setShowMemberList(false)}
         >
           <div
-            className="bg-white rounded-2xl p-6 shadow-xl w-full max-w-md mx-4"
+            className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-96 overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-gray-800">👤 User Details</h3>
-              <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold leading-none">×</button>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold text-gray-800">Members of {selectedBusiness.businessName}</h3>
+              <button onClick={() => setShowMemberList(false)} className="text-gray-500 hover:text-gray-700 text-xl font-bold">×
+              </button>
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="font-bold">{selectedUser.name || 'Unknown'}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-mono font-bold text-sm">{selectedUser.whatsapp_phone_number}</span></div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500">Plan</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
-                  {selectedUser.plan}
-                </span>
-              </div>
-              <div className="flex justify-between"><span className="text-gray-500">Reminders Sent</span><span className="font-bold text-green-600">{selectedUser.sentReminders}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Pending</span><span className="font-bold text-blue-600">{selectedUser.pendingReminders}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Pro Expires</span><span className="font-bold text-sm">{formatDate(selectedUser.plan_expires_at)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Joined</span><span className="font-bold text-sm">{formatDate(selectedUser.created_at)}</span></div>
-              <div className="pt-3 border-t border-gray-100">
-                <button
-                  onClick={() => {
-                    setActivatePhone(selectedUser.whatsapp_phone_number);
-                    setActiveTab('activate');
-                    setSelectedUser(null);
-                  }}
-                  className="w-full py-2 rounded-xl text-white text-sm font-bold"
-                  style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
-                >
-                  ⚡ Activate Pro for this user
-                </button>
-              </div>
-            </div>
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">WhatsApp</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subscription End</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Opted In</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {businessMembers.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No members yet.</td></tr>
+                )}
+                {businessMembers.map(member => (
+                  <tr key={member.id} className="border-b">
+                    <td className="px-4 py-3 text-sm">{member.memberName || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-mono">{member.memberWhatsapp}</td>
+                    <td className="px-4 py-3 text-sm">{formatDate(member.subscriptionEndDate)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${member.optedIn ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                        {member.optedIn ? 'Yes' : 'No'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">{formatDate(member.joinedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
-
     </div>
   );
 }
