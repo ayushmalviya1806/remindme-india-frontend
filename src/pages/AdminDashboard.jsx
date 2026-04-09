@@ -42,6 +42,9 @@ export default function AdminDashboard() {
     subscriptionEndDate: ''
   });
   const [addMemberMsg, setAddMemberMsg] = useState('');
+  const [editingMember, setEditingMember] = useState(null);
+  const [editExpiryDate, setEditExpiryDate] = useState('');
+  const [editExpiryMsg, setEditExpiryMsg] = useState('');
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -879,7 +882,73 @@ const fetchData = async (adminSecret) => {
                   <tr key={member.id} className="border-b">
                     <td className="px-4 py-3 text-sm">{member.memberName || '-'}</td>
                     <td className="px-4 py-3 text-sm font-mono">{member.memberWhatsapp}</td>
-                    <td className="px-4 py-3 text-sm">{formatDate(member.subscriptionEndDate)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      {editingMember === member.id ? (
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="date"
+                            value={editExpiryDate}
+                            onChange={(e) => setEditExpiryDate(e.target.value)}
+                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-500"
+                          />
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await fetch(`${B2B_BASE}/members/update-expiry`, {
+                                  method: 'POST',
+                                  headers: {
+                                    'x-admin-secret': secret,
+                                    'Content-Type': 'application/json'
+                                  },
+                                  body: JSON.stringify({
+                                    businessId: selectedBusiness.id,
+                                    memberWhatsapp: member.memberWhatsapp,
+                                    subscriptionEndDate: editExpiryDate
+                                  })
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  setEditExpiryMsg('✅ Updated!');
+                                  setEditingMember(null);
+                                  fetchBusinessMembers(selectedBusiness.id);
+                                  setTimeout(() => setEditExpiryMsg(''), 3000);
+                                } else {
+                                  setEditExpiryMsg(`❌ ${data.error}`);
+                                }
+                              } catch (error) {
+                                setEditExpiryMsg('❌ Error');
+                              }
+                            }}
+                            className="px-2 py-1 bg-green-500 text-white rounded text-xs"
+                          >
+                            Save
+                          </button>
+                          <button
+                            onClick={() => setEditingMember(null)}
+                            className="px-2 py-1 bg-gray-300 rounded text-xs"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2 items-center">
+                          <span>{formatDate(member.subscriptionEndDate)}</span>
+                          <button
+                            onClick={() => {
+                              setEditingMember(member.id);
+                              setEditExpiryDate(
+                                member.subscriptionEndDate
+                                  ? new Date(member.subscriptionEndDate).toISOString().split('T')[0]
+                                  : ''
+                              );
+                            }}
+                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${member.optedIn ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                         {member.optedIn ? 'Yes' : 'No'}
@@ -890,6 +959,11 @@ const fetchData = async (adminSecret) => {
                 ))}
               </tbody>
             </table>
+          {editExpiryMsg && (
+            <p className={`mt-2 text-sm font-medium ${editExpiryMsg.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+              {editExpiryMsg}
+            </p>
+          )}
           </div>
         </div>
       )}
