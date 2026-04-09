@@ -608,6 +608,7 @@ const fetchData = async (adminSecret) => {
                             <button
                               onClick={async () => {
                                 setSelectedBusiness(business);
+                                setShowMemberList(true);
                                 fetchBusinessMembers(business.id);
                               }}
                               className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
