@@ -723,17 +723,17 @@ const fetchData = async (adminSecret) => {
 
             {/* Add Member Form */}
             <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-gray-800 mb-4">
+              <h2 className="font-bold text-gray-800 mb-1">
                 <span className="text-2xl mr-2">+</span>Add Member to Business
               </h2>
               <p className="text-sm text-gray-500 mb-4">
-                Add a member directly - no Supabase needed. 
-                They'll get a WhatsApp welcome message automatically.
+                Add member directly - no Supabase needed. 
+                Welcome WhatsApp sent automatically.
               </p>
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Business
+                    Select Business *
                   </label>
                   <select
                     value={addMemberForm.businessId}
@@ -750,13 +750,14 @@ const fetchData = async (adminSecret) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Member WhatsApp Number
+                    Member WhatsApp * (with country code)
                   </label>
                   <input
                     type="text"
                     value={addMemberForm.memberWhatsapp}
                     onChange={(e) => setAddMemberForm({
-                      ...addMemberForm, memberWhatsapp: e.target.value
+                      ...addMemberForm, 
+                      memberWhatsapp: e.target.value.replace(/\D/g, '')
                     })}
                     className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
                     placeholder="919876543210"
@@ -778,7 +779,7 @@ const fetchData = async (adminSecret) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subscription End Date
+                    Subscription End Date (optional)
                   </label>
                   <input
                     type="date"
@@ -793,7 +794,11 @@ const fetchData = async (adminSecret) => {
               <button
                 onClick={async () => {
                   if (!addMemberForm.businessId || !addMemberForm.memberWhatsapp) {
-                    setAddMemberMsg('Business and WhatsApp number required');
+                    setAddMemberMsg('Business aur WhatsApp number required hai');
+                    return;
+                  }
+                  if (addMemberForm.memberWhatsapp.length < 10) {
+                    setAddMemberMsg('Valid WhatsApp number enter karein (with country code)');
                     return;
                   }
                   try {
