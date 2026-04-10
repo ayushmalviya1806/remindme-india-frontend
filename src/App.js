@@ -16,6 +16,7 @@ import Footer from "@/components/landing/Footer";
 import AdminDashboard from "@/pages/AdminDashboard";
 import ProCheckout from "@/pages/ProCheckout";
 import BusinessLanding from "@/pages/BusinessLanding";
+import JoinPage from "./pages/JoinPage";
 
 function LandingPage() {
   useScrollAnimation();
@@ -194,6 +195,7 @@ function App() {
         <Route path="/pro" element={<ProCheckout />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/business" element={<BusinessLanding />} />
+        <Route path="/join/:code" element={<JoinPage />} />
       </Routes>
     </Router>
   );
