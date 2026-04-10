@@ -45,6 +45,10 @@ export default function AdminDashboard() {
   const [editingMember, setEditingMember] = useState(null);
   const [editExpiryDate, setEditExpiryDate] = useState('');
   const [editExpiryMsg, setEditExpiryMsg] = useState('');
+  const [csvBusinessId, setCsvBusinessId] = useState('');
+  const [csvData, setCsvData] = useState('');
+  const [csvImporting, setCsvImporting] = useState(false);
+  const [csvResults, setCsvResults] = useState(null);
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -125,6 +129,36 @@ const fetchData = async (adminSecret) => {
   const handleLogin = async (e) => {
     e.preventDefault();
     await fetchData(secret);
+  };
+
+  const handleCsvImport = async () => {
+    if (!csvBusinessId || !csvData.trim()) return;
+    setCsvImporting(true);
+    setCsvResults(null);
+    try {
+      const res = await fetch(`${B2B_BASE}/members/bulk-import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-secret': secret
+        },
+        body: JSON.stringify({
+          businessId: csvBusinessId,
+          csvData: csvData.trim()
+        })
+      });
+      const data = await res.json();
+      setCsvResults(data);
+      if (data.success && data.results.success > 0) {
+        // Refresh members list if viewing this business
+        alert(`✅ Import complete! ${data.results.success} members added successfully.`);
+      }
+    } catch (err) {
+      alert('❌ Import failed. Check console for details.');
+      console.error('CSV import error:', err);
+    } finally {
+      setCsvImporting(false);
+    }
   };
 
   const handleActivatePro = async () => {
@@ -723,6 +757,149 @@ const fetchData = async (adminSecret) => {
               >
                 Send Message
               </button>
+            </div>
+
+            {/* CSV Bulk Import Section */}
+            <div style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '12px',
+              padding: '20px',
+              marginBottom: '24px'
+            }}>
+              <h3 style={{ margin: '0 0 4px 0', color: '#15803d', fontSize: '16px' }}>
+                📥 Bulk Import Members (CSV)
+              </h3>
+              <p style={{ margin: '0 0 16px 0', color: '#166534', fontSize: '13px' }}>
+                Upload a CSV file or paste CSV data. Format: <strong>Name, WhatsApp, Expiry Date</strong> (expiry optional)
+              </p>
+              {/* Business selector for CSV import */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
+                  Select Business *
+                </label>
+                <select
+                  value={csvBusinessId}
+                  onChange={e => setCsvBusinessId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '8px 12px', borderRadius: '8px',
+                    border: '1px solid #d1d5db', fontSize: '14px'
+                  }}
+                >
+                  <option value="">-- Select Business --</option>
+                  {businesses.map(b => (
+                    <option key={b.id} value={b.id}>{b.businessName}</option>
+                  ))}
+                </select>
+              </div>
+              {/* CSV textarea */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
+                  Paste CSV Data *
+                </label>
+                <textarea
+                  value={csvData}
+                  onChange={e => setCsvData(e.target.value)}
+                  placeholder={`Name,WhatsApp,ExpiryDate\nRahul Sharma,9876543210,2026-07-01\nPriya Singh,919876543211,2026-08-15\nAmit Kumar,9123456789`}
+                  rows={8}
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: '8px',
+                    border: '1px solid #d1d5db', fontSize: '13px',
+                    fontFamily: 'monospace', resize: 'vertical',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              {/* File upload option */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
+                  Or Upload CSV File
+                </label>
+                <input
+                  type="file"
+                  accept=".csv,.txt"
+                  onChange={e => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = ev => setCsvData(ev.target.result);
+                    reader.readAsText(file);
+                  }}
+                  style={{ fontSize: '13px', color: '#374151' }}
+                />
+              </div>
+              {/* Format guide */}
+              <div style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px',
+                fontSize: '12px',
+                color: '#6b7280'
+              }}>
+                <strong style={{ color: '#374151' }}>📋 Supported formats:</strong><br/>
+                • <code>Name, Phone, YYYY-MM-DD</code> — with expiry<br/>
+                • <code>Name, Phone</code> — no expiry<br/>
+                • <code>Phone, Name, YYYY-MM-DD</code> — phone first<br/>
+                • Phone can be 10 digits (91 added automatically) or full 91XXXXXXXXXX<br/>
+                • Header row is auto-detected and skipped<br/>
+                • Supports comma (,) or semicolon (;) separator
+              </div>
+              <button
+                onClick={handleCsvImport}
+                disabled={csvImporting || !csvBusinessId || !csvData.trim()}
+                style={{
+                  background: csvImporting || !csvBusinessId || !csvData.trim() ? '#9ca3af' : '#15803d',
+                  color: 'white', border: 'none', borderRadius: '8px',
+                  padding: '10px 24px', fontSize: '14px', fontWeight: '600',
+                  cursor: csvImporting || !csvBusinessId || !csvData.trim() ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {csvImporting ? '⏳ Importing...' : '📥 Import Members'}
+              </button>
+              {/* Import results */}
+              {csvResults && (
+                <div style={{
+                  marginTop: '16px',
+                  background: '#fff',
+                  border: `1px solid ${csvResults.results.failed > 0 ? '#fca5a5' : '#bbf7d0'}`,
+                  borderRadius: '8px',
+                  padding: '16px'
+                }}>
+                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '14px' }}>
+                    📊 Import Results
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
+                    {[
+                      { label: 'Total', value: csvResults.results.total, color: '#374151' },
+                      { label: '✅ Success', value: csvResults.results.success, color: '#15803d' },
+                      { label: '❌ Failed', value: csvResults.results.failed, color: '#dc2626' },
+                      { label: '⏭️ Skipped', value: csvResults.results.skipped, color: '#d97706' },
+                    ].map(item => (
+                      <div key={item.label} style={{
+                        textAlign: 'center', padding: '8px',
+                        background: '#f9fafb', borderRadius: '6px'
+                      }}>
+                        <div style={{ fontSize: '20px', fontWeight: '700', color: item.color }}>
+                          {item.value}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{item.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {csvResults.results.errors.length > 0 && (
+                    <div style={{ fontSize: '12px', color: '#dc2626' }}>
+                      <strong>Errors:</strong>
+                      <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                        {csvResults.results.errors.map((err, i) => (
+                          <li key={i}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Add Member Form */}
