@@ -49,6 +49,14 @@ export default function AdminDashboard() {
   const [csvData, setCsvData] = useState('');
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvResults, setCsvResults] = useState(null);
+  
+  // QR Code modal states
+  const [qrModal, setQrModal] = useState({
+    show: false,
+    businessName: '',
+    qrCode: '',
+    joinUrl: ''
+  });
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -91,6 +99,28 @@ export default function AdminDashboard() {
     setBusinessMembers(data.members || []);
   } catch (error) {
     console.error('Failed to fetch business members:', error);
+  }
+};
+
+const fetchQRCode = async (businessId, businessName) => {
+  if (!secret) return;
+  try {
+    const headers = { 'x-admin-secret': secret };
+    const res = await fetch(`${B2B_BASE}/${businessId}/qr`, { headers });
+    const data = await res.json();
+    if (data.success) {
+      setQrModal({
+        show: true,
+        businessName,
+        qrCode: data.qrCode,
+        joinUrl: data.joinUrl
+      });
+    } else {
+      alert('Failed to generate QR code');
+    }
+  } catch (error) {
+    console.error('Failed to fetch QR code:', error);
+    alert('Failed to generate QR code');
   }
 };
 
@@ -664,6 +694,14 @@ const fetchData = async (adminSecret) => {
                               Send Bulk
                             </button>
                             <button
+                              onClick={() => {
+                                fetchQRCode(business.id, business.businessName);
+                              }}
+                              className="px-3 py-1 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600"
+                            >
+                              QR Code
+                            </button>
+                            <button
                               onClick={async () => {
                                 if (confirm(`Deactivate ${business.businessName}?`)) {
                                   const headers = { 'x-admin-secret': secret };
@@ -1144,6 +1182,63 @@ const fetchData = async (adminSecret) => {
           </div>
         </div>
       )}
+
+    {/* QR Code Modal */}
+    {qrModal.show && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold text-gray-900">{qrModal.businessName}</h3>
+            <button
+              onClick={() => setQrModal({ show: false, businessName: '', qrCode: '', joinUrl: '' })}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="text-center">
+            <img 
+              src={qrModal.qrCode} 
+              alt="QR Code" 
+              className="mx-auto mb-4"
+              style={{ width: '300px', height: '300px' }}
+            />
+            
+            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">Join URL:</p>
+              <p className="text-xs font-mono break-all text-gray-800">{qrModal.joinUrl}</p>
+            </div>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              Print this QR code and place it at your front desk
+            </p>
+            
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = qrModal.qrCode;
+                  link.download = `${qrModal.businessName.replace(/[^a-zA-Z0-9]/g, '-')}-join-qr.png`;
+                  link.click();
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+              >
+                Download QR
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+              >
+                Print
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }
