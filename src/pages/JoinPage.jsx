@@ -15,27 +15,26 @@ export default function JoinPage() {
   const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
+    const fetchBusiness = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${API_BASE_URL}/api/business/public/${code}`);
+        const data = await res.json();
+        
+        if (!res.ok) {
+          setError(data.error || 'Business not found');
+          return;
+        }
+        
+        setBusiness(data.business);
+      } catch (err) {
+        setError('Failed to load. Please check your link and try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchBusiness();
   }, [code]);
-
-  const fetchBusiness = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/business/public/${code}`);
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setError(data.error || 'Business not found');
-        return;
-      }
-      
-      setBusiness(data.business);
-    } catch (err) {
-      setError('Failed to load. Please check your link and try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     setSubmitError('');
