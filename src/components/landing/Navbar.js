@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, X, Bell } from 'lucide-react';
 
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
@@ -7,7 +8,7 @@ const NAV_ITEMS = [
   { label: 'Features', href: '#features' },
   { label: 'How it Works', href: '#how-it-works' },
   { label: 'Pricing', href: '#pricing' },
-  { label: 'For Business', href: '#for-business' },
+  { label: 'For Business', href: '/business', isRouterLink: true },
 ];
 
 export default function Navbar() {
@@ -53,16 +54,30 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-8">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                data-testid={`nav-link-${item.label.toLowerCase().replace(/\s/g, '-')}`}
-                className="text-sm font-medium text-rm-muted hover:text-rm-primary transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-rm-green after:transition-all after:duration-300 hover:after:w-full"
-              >
-                {item.label}
-              </a>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              if (item.isRouterLink) {
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    data-testid={`nav-link-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                    className="text-sm font-medium text-rm-muted hover:text-rm-primary transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-rm-green after:transition-all after:duration-300 hover:after:w-full"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  data-testid={`nav-link-${item.label.toLowerCase().replace(/\s/g, '-')}`}
+                  className="text-sm font-medium text-rm-muted hover:text-rm-primary transition-colors duration-200 relative after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-rm-green after:transition-all after:duration-300 hover:after:w-full"
+                >
+                  {item.label}
+                </a>
+              );
+            })}
           </div>
 
           {/* Desktop CTA */}
@@ -108,16 +123,30 @@ export default function Navbar() {
         }}
       >
         <div className="px-4 pb-6 pt-2 space-y-1">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={handleNavClick}
-              className="block px-4 py-3 rounded-xl text-sm font-medium text-rm-text hover:bg-rm-surface transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            if (item.isRouterLink) {
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={handleNavClick}
+                  className="block px-4 py-3 rounded-xl text-sm font-medium text-rm-text hover:bg-rm-surface transition-colors"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={handleNavClick}
+                className="block px-4 py-3 rounded-xl text-sm font-medium text-rm-text hover:bg-rm-surface transition-colors"
+              >
+                {item.label}
+              </a>
+            );
+          })}
           <a
             href={WA_LINK}
             target="_blank"

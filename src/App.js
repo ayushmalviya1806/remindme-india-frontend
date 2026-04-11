@@ -11,6 +11,7 @@ import FeaturesGrid from "@/components/landing/FeaturesGrid";
 import SocialProof from "@/components/landing/SocialProof";
 import Pricing from "@/components/landing/Pricing";
 import B2BSection from "@/components/landing/B2BSection";
+import BusinessSection from "@/components/landing/BusinessSection";
 import FinalCTA from "@/components/landing/FinalCTA";
 import Footer from "@/components/landing/Footer";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -60,6 +61,7 @@ function LandingPage() {
       <SocialProof />
       <Pricing />
       <B2BSection />
+      <BusinessSection />
       <FinalCTA />
       <Footer />
       
