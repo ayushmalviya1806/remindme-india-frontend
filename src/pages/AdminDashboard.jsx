@@ -50,6 +50,13 @@ export default function AdminDashboard() {
   const [csvImporting, setCsvImporting] = useState(false);
   const [csvResults, setCsvResults] = useState(null);
   
+  // Broadcast states
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastFilter, setBroadcastFilter] = useState('all');
+  const [broadcastLoading, setBroadcastLoading] = useState(false);
+  const [broadcastResult, setBroadcastResult] = useState(null);
+  const [broadcastError, setBroadcastError] = useState('');
+  
   // QR Code modal states
   const [qrModal, setQrModal] = useState({
     show: false,
@@ -57,6 +64,49 @@ export default function AdminDashboard() {
     qrCode: '',
     joinUrl: ''
   });
+
+  const sendBroadcast = async () => {
+    if (!secret) {
+      setBroadcastError('Please login first');
+      return;
+    }
+    if (!broadcastMessage.trim()) {
+      setBroadcastError('Message cannot be empty');
+      return;
+    }
+
+    const confirmed = window.confirm(`Are you sure? This will send to potentially hundreds of users and cannot be undone.`);
+    if (!confirmed) return;
+
+    setBroadcastLoading(true);
+    setBroadcastError('');
+    setBroadcastResult(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/broadcast`, {
+        method: 'POST',
+        headers: {
+          'x-admin-secret': secret,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: broadcastMessage.trim(),
+          filter: broadcastFilter
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setBroadcastResult(data);
+        setBroadcastMessage('');
+      } else {
+        setBroadcastError(data.error || 'Failed to send broadcast');
+      }
+    } catch (error) {
+      setBroadcastError('Error sending broadcast');
+    } finally {
+      setBroadcastLoading(false);
+    }
+  };
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -318,7 +368,7 @@ const fetchData = async (adminSecret) => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {['overview', 'users', 'reminders', 'activate', 'business'].map(tab => (
+          {['overview', 'users', 'reminders', 'activate', 'business', 'broadcast'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -327,7 +377,7 @@ const fetchData = async (adminSecret) => {
               }`}
               style={activeTab === tab ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
             >
-              {tab === 'activate' ? '⚡ Activate Pro' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'activate' ? '⚡ Activate Pro' : tab === 'broadcast' ? '📢 Broadcast' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
@@ -1182,6 +1232,83 @@ const fetchData = async (adminSecret) => {
           </div>
         </div>
       )}
+
+        {/* Broadcast Tab */}
+        {activeTab === 'broadcast' && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm max-w-2xl">
+            <h2 className="font-bold text-gray-800 mb-6">Broadcast Message</h2>
+            
+            {/* Filter Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-3">Send To:</label>
+              <div className="space-y-2">
+                {[
+                  { value: 'all', label: 'All Users' },
+                  { value: 'free', label: 'Free Users Only' },
+                  { value: 'pro', label: 'Pro Users Only' }
+                ].map(option => (
+                  <label key={option.value} className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="broadcastFilter"
+                      value={option.value}
+                      checked={broadcastFilter === option.value}
+                      onChange={(e) => setBroadcastFilter(e.target.value)}
+                      className="mr-3 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-gray-700">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Message Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+              <textarea
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+                placeholder="Type your message here..."
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 h-32 focus:outline-none focus:border-green-500 resize-none"
+              />
+            </div>
+
+            {/* Warning */}
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <span className="font-bold">Warning:</span> This will send WhatsApp message to all selected users. Cannot be undone.
+              </p>
+            </div>
+
+            {/* Error */}
+            {broadcastError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{broadcastError}</p>
+              </div>
+            )}
+
+            {/* Result */}
+            {broadcastResult && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-4 text-sm">
+                  <span className="text-green-700">Sent: {broadcastResult.sent}</span>
+                  <span className="text-yellow-700">Skipped: {broadcastResult.skipped}</span>
+                  <span className="text-gray-700">Total: {broadcastResult.total}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Send Button */}
+            <button
+              onClick={sendBroadcast}
+              disabled={broadcastLoading || !broadcastMessage.trim()}
+              className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ background: broadcastLoading ? '#9ca3af' : 'linear-gradient(135deg, #006D2F, #25D366)' }}
+            >
+              {broadcastLoading ? 'Sending...' : 'Send Broadcast'}
+            </button>
+          </div>
+        )}
 
     {/* QR Code Modal */}
     {qrModal.show && (
