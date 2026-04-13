@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, RefreshCw, Lock } from 'lucide-react';
 
 const API_BASE = 'https://remindme-india.onrender.com/api/admin';
@@ -57,6 +57,12 @@ export default function AdminDashboard() {
   const [broadcastResult, setBroadcastResult] = useState(null);
   const [broadcastError, setBroadcastError] = useState('');
   
+  // Inbox states
+  const [inboxMessages, setInboxMessages] = useState([]);
+  const [inboxLoading, setInboxLoading] = useState(false);
+  const [inboxError, setInboxError] = useState('');
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(null);
+  
   // QR Code modal states
   const [qrModal, setQrModal] = useState({
     show: false,
@@ -107,6 +113,51 @@ export default function AdminDashboard() {
       setBroadcastLoading(false);
     }
   };
+
+  const fetchInbox = useCallback(async () => {
+    if (!secret) {
+      setInboxError('Please login first');
+      return;
+    }
+    setInboxLoading(true);
+    setInboxError('');
+    try {
+      const res = await fetch(`${API_BASE}/inbox`, {
+        headers: { 'x-admin-secret': secret }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setInboxMessages(data.messages || []);
+      } else {
+        setInboxError(data.error || 'Failed to fetch inbox');
+      }
+    } catch (error) {
+      setInboxError('Error fetching inbox');
+    } finally {
+      setInboxLoading(false);
+    }
+  }, [secret]);
+
+  // Auto-refresh inbox when active tab
+  useEffect(() => {
+    if (activeTab === 'inbox' && authenticated) {
+      fetchInbox();
+      // Set up auto-refresh every 30 seconds
+      const interval = setInterval(fetchInbox, 30000);
+      setAutoRefreshInterval(interval);
+      
+      return () => {
+        clearInterval(interval);
+        setAutoRefreshInterval(null);
+      };
+    } else {
+      // Clear interval when switching away from inbox tab
+      if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        setAutoRefreshInterval(null);
+      }
+    }
+  }, [activeTab, authenticated, autoRefreshInterval, fetchInbox]);
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -368,7 +419,7 @@ const fetchData = async (adminSecret) => {
 
         {/* Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap">
-          {['overview', 'users', 'reminders', 'activate', 'business', 'broadcast'].map(tab => (
+          {['overview', 'users', 'reminders', 'activate', 'business', 'broadcast', 'inbox'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -377,7 +428,7 @@ const fetchData = async (adminSecret) => {
               }`}
               style={activeTab === tab ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
             >
-              {tab === 'activate' ? '⚡ Activate Pro' : tab === 'broadcast' ? '📢 Broadcast' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {tab === 'activate' ? '⚡ Activate Pro' : tab === 'broadcast' ? '📢 Broadcast' : tab === 'inbox' ? '📨 Inbox' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
           ))}
         </div>
@@ -1307,6 +1358,77 @@ const fetchData = async (adminSecret) => {
             >
               {broadcastLoading ? 'Sending...' : 'Send Broadcast'}
             </button>
+          </div>
+        )}
+
+        {/* Inbox Tab */}
+        {activeTab === 'inbox' && (
+          <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="font-bold text-gray-800">Inbox - Last 30 Messages</h2>
+              <button
+                onClick={fetchInbox}
+                disabled={inboxLoading}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {inboxLoading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+
+            {/* Error */}
+            {inboxError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{inboxError}</p>
+              </div>
+            )}
+
+            {/* Messages */}
+            {inboxLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              </div>
+            ) : inboxMessages.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No messages yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {inboxMessages.map((message) => (
+                  <div key={message.id} className="border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {message.userName || 'Unknown User'}
+                        </p>
+                        <p className="text-sm text-gray-600">+{message.phone}</p>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        {new Date(message.receivedAt).toLocaleString('en-IN', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: 'Asia/Kolkata'
+                        })} IST
+                      </p>
+                    </div>
+                    <div className="text-gray-700">
+                      {message.message.length > 100 ? (
+                        <div>
+                          <p>{message.message.substring(0, 100)}...</p>
+                          <button className="text-blue-600 text-sm hover:underline mt-1">
+                            show more
+                          </button>
+                        </div>
+                      ) : (
+                        <p>{message.message}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
