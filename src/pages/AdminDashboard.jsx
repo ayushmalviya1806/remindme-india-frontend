@@ -1403,7 +1403,7 @@ const fetchData = async (adminSecret) => {
                         <p className="text-sm text-gray-600">+{message.phone}</p>
                       </div>
                       <p className="text-xs text-gray-500">
-                        {new Date(message.receivedAt).toLocaleString('en-IN', {
+                        {new Date(message.createdAt).toLocaleString('en-IN', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
