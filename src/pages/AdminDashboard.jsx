@@ -148,13 +148,7 @@ export default function AdminDashboard() {
     }
   }, [secret, inboxSkip]);
 
-  // Fetch inbox when tab becomes active
-  useEffect(() => {
-    if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
-      fetchInbox();
-    }
-  }, [activeTab, authenticated, fetchInbox, inboxMessages.length]);
-
+  
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
       alert('Please login first');
