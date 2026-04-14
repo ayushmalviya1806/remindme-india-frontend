@@ -61,7 +61,8 @@ export default function AdminDashboard() {
   const [inboxMessages, setInboxMessages] = useState([]);
   const [inboxLoading, setInboxLoading] = useState(false);
   const [inboxError, setInboxError] = useState('');
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(null);
+  const [inboxSkip, setInboxSkip] = useState(0);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
   
   // QR Code modal states
   const [qrModal, setQrModal] = useState({
@@ -114,7 +115,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchInbox = useCallback(async () => {
+  const fetchInbox = useCallback(async (loadMore = false) => {
     if (!secret) {
       setInboxError('Please login first');
       return;
@@ -122,12 +123,21 @@ export default function AdminDashboard() {
     setInboxLoading(true);
     setInboxError('');
     try {
-      const res = await fetch(`${API_BASE}/inbox`, {
+      const url = loadMore ? `${API_BASE}/inbox?skip=${inboxSkip}` : `${API_BASE}/inbox`;
+      const res = await fetch(url, {
         headers: { 'x-admin-secret': secret }
       });
       const data = await res.json();
       if (data.success) {
-        setInboxMessages(data.messages || []);
+        if (loadMore) {
+          setInboxMessages(prev => [...prev, ...(data.messages || [])]);
+          setInboxSkip(prev => prev + (data.messages?.length || 0));
+          setHasMoreMessages(data.messages?.length === 10);
+        } else {
+          setInboxMessages(data.messages || []);
+          setInboxSkip(0);
+          setHasMoreMessages((data.messages?.length || 0) === 10);
+        }
       } else {
         setInboxError(data.error || 'Failed to fetch inbox');
       }
@@ -136,28 +146,14 @@ export default function AdminDashboard() {
     } finally {
       setInboxLoading(false);
     }
-  }, [secret]);
+  }, [secret, inboxSkip]);
 
-  // Auto-refresh inbox when active tab
+  // Fetch inbox when tab becomes active
   useEffect(() => {
-    if (activeTab === 'inbox' && authenticated) {
+    if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
       fetchInbox();
-      // Set up auto-refresh every 30 seconds
-      const interval = setInterval(fetchInbox, 30000);
-      setAutoRefreshInterval(interval);
-      
-      return () => {
-        clearInterval(interval);
-        setAutoRefreshInterval(null);
-      };
-    } else {
-      // Clear interval when switching away from inbox tab
-      if (autoRefreshInterval) {
-        clearInterval(autoRefreshInterval);
-        setAutoRefreshInterval(null);
-      }
     }
-  }, [activeTab, authenticated, autoRefreshInterval, fetchInbox]);
+  }, [activeTab, authenticated, fetchInbox, inboxMessages.length]);
 
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
@@ -1427,6 +1423,19 @@ const fetchData = async (adminSecret) => {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+            
+            {/* Load More Button */}
+            {hasMoreMessages && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => fetchInbox(true)}
+                  disabled={inboxLoading}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                >
+                  {inboxLoading ? 'Loading...' : 'Load More'}
+                </button>
               </div>
             )}
           </div>
