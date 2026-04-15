@@ -18,6 +18,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import ProCheckout from "@/pages/ProCheckout";
 import BusinessLanding from "@/pages/BusinessLanding";
 import JoinPage from "./pages/JoinPage";
+import B2BSuccess from "./pages/B2BSuccess";
 
 function LandingPage() {
   useScrollAnimation();
@@ -197,6 +198,7 @@ function App() {
         <Route path="/pro" element={<ProCheckout />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/business" element={<BusinessLanding />} />
+        <Route path="/b2b-success" element={<B2BSuccess />} />
         <Route path="/join/:code" element={<JoinPage />} />
       </Routes>
     </Router>

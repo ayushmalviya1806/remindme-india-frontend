@@ -249,9 +249,9 @@ export default function BusinessLanding() {
           <AnimatedSection><div style={{ textAlign: "center", marginBottom: 56 }}><span className="badge badge-green" style={{ marginBottom: 16 }}>{"\ud83c\udf89"} 7-day FREE trial on all plans</span><br /><span className="section-label" style={{ marginTop: 12, display: "block" }}>Pricing</span><h2 className="font-display" style={{ fontSize: 38, fontWeight: 700, color: "#0f172a" }}>Simple, transparent pricing</h2></div></AnimatedSection>
           <div className="pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, maxWidth: 960, margin: "0 auto" }}>
             {[
-              {name:"Small",price:"999",members:"100",msgs:"400",features:["Auto expiry reminders","Broadcast messages","Monthly reports","QR code join","WhatsApp support"],popular:false,cta:"https://wa.me/917470578178?text=Hi%20I%20want%20Small%20plan"},
-              {name:"Professional",price:"1,999",members:"500",msgs:"2,000",features:["Everything in Small","Priority support","CSV bulk import","Custom welcome message","Trial nudge system"],popular:true,cta:"https://wa.me/917470578178?text=Hi%20I%20want%20Professional%20plan"},
-              {name:"Enterprise",price:"2,999",members:"Unlimited",msgs:"Unlimited",features:["Everything in Professional","Multi-staff access","Dedicated support","Custom integrations","SLA guarantee"],popular:false,cta:"https://wa.me/917470578178?text=Hi%20I%20want%20Enterprise%20plan"},
+              {name:"Small",price:"999",members:"100",msgs:"400",features:["Auto expiry reminders","Broadcast messages","Monthly reports","QR code join","WhatsApp support"],popular:false,cta:"https://rzp.io/rzp/0GZyM4M"},
+              {name:"Professional",price:"1,999",members:"500",msgs:"2,000",features:["Everything in Small","Priority support","CSV bulk import","Custom welcome message","Trial nudge system"],popular:true,cta:"https://rzp.io/rzp/e3OwPfK"},
+              {name:"Enterprise",price:"2,999",members:"Unlimited",msgs:"Unlimited",features:["Everything in Professional","Multi-staff access","Dedicated support","Custom integrations","SLA guarantee"],popular:false,cta:"https://rzp.io/rzp/r0zJWcih"},
             ].map((plan,i) => (
               <AnimatedSection key={plan.name} delay={i*100}>
                 <div className={`pricing-card ${plan.popular?"popular":""}`} style={{ transform: plan.popular ? "translateY(-8px)" : "none" }}>
@@ -263,7 +263,7 @@ export default function BusinessLanding() {
                     {plan.features.map(f => <li key={f} style={{ fontSize: 14, color: "#374151", display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "#25D366", fontWeight: 700 }}>{"\u2713"}</span> {f}</li>)}
                     <li style={{ fontSize: 13, color: "#25D366", display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}><span>{"\ud83c\udf81"}</span> 7-day FREE trial</li>
                   </ul>
-                  <a href={plan.cta} target="_blank" rel="noopener noreferrer" className={plan.popular ? "btn-primary" : "btn-secondary"} style={{ display: "flex", justifyContent: "center", width: "100%" }}>Start Free Trial</a>
+                  <a href={plan.cta} target="_blank" rel="noopener noreferrer" className={plan.popular ? "btn-primary" : "btn-secondary"} style={{ display: "flex", justifyContent: "center", width: "100%" }}>Pay & Get Started</a>
                 </div>
               </AnimatedSection>
             ))}
