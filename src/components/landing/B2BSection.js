@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const B2B_WHATSAPP = 'https://wa.me/916269915175?text=' + encodeURIComponent(
   `Hi, I'm interested in RemindMe India for my business.\n\nBusiness type: \nCity: ` 
 );
@@ -53,15 +55,13 @@ export default function B2BSection() {
               ))}
             </div>
 
-            <a
-              href={B2B_WHATSAPP}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/business"
               data-testid="b2b-cta"
               className="inline-flex items-center gap-2 rounded-full bg-white text-rm-primary font-heading font-bold text-base px-8 py-4 hover:bg-rm-beige transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95"
             >
-              💬 WhatsApp pe Baat Karo →
-            </a>
+              Business Plans Dekho →
+            </Link>
           </div>
 
           {/* Right - Use case cards */}
