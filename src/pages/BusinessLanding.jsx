@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const WHATSAPP_CTA = "https://wa.me/917470578178?text=Hi%20I%20want%20to%20try%20RemindMe%20India%20for%20my%20business";
+const WHATSAPP_CTA = "https://wa.me/916269915175?text=Hi%20I%20want%20to%20try%20RemindMe%20India%20for%20my%20business";
 const BOT_LINK = "https://wa.me/916269915175?text=Hi";
 
 const AnimatedSection = ({ children, className = "", delay = 0 }) => {
