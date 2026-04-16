@@ -63,6 +63,12 @@ export default function AdminDashboard() {
   const [inboxError, setInboxError] = useState('');
   const [inboxSkip, setInboxSkip] = useState(0);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [expandedMessages, setExpandedMessages] = useState({});
+
+  // Toggle message expansion
+  const toggleMessage = (id) => {
+    setExpandedMessages(prev => ({ ...prev, [id]: !prev[id] }));
+  };
   
   // QR Code modal states
   const [qrModal, setQrModal] = useState({
@@ -1404,16 +1410,41 @@ const fetchData = async (adminSecret) => {
                       </p>
                     </div>
                     <div className="text-gray-700">
-                      {message.message.length > 100 ? (
-                        <div>
-                          <p>{message.message.substring(0, 100)}...</p>
-                          <button className="text-blue-600 text-sm hover:underline mt-1">
-                            show more
-                          </button>
-                        </div>
-                      ) : (
-                        <p>{message.message}</p>
-                      )}
+                      {(() => {
+                        const isExpanded = expandedMessages[message.id];
+                        const isLong = message.message && message.message.length > 120;
+                        
+                        return (
+                          <div>
+                            <p style={{ 
+                              fontSize: '14px', 
+                              color: '#374151', 
+                              lineHeight: '1.6', 
+                              whiteSpace: 'pre-wrap', 
+                              wordBreak: 'break-word' 
+                            }}>
+                              {isLong && !isExpanded ? message.message.slice(0, 120) + '...' : message.message}
+                            </p>
+                            {isLong && (
+                              <button
+                                onClick={() => toggleMessage(message.id)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#006D2F',
+                                  fontWeight: '600',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  padding: '4px 0',
+                                  textDecoration: 'underline'
+                                }}
+                              >
+                                {isExpanded ? 'Show less' : 'Show more'}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
