@@ -1336,12 +1336,38 @@ const fetchData = async (adminSecret) => {
 
             {/* Result */}
             {broadcastResult && (
-              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-4 text-sm">
-                  <span className="text-green-700">Sent: {broadcastResult.sent}</span>
-                  <span className="text-yellow-700">Skipped: {broadcastResult.skipped}</span>
-                  <span className="text-gray-700">Total: {broadcastResult.total}</span>
-                </div>
+              <div className={`mb-6 p-4 border rounded-lg ${
+                broadcastResult.status === 'started' 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : broadcastResult.sent === 0 
+                  ? 'bg-red-50 border-red-200' 
+                  : 'bg-green-50 border-green-200'
+              }`}>
+                {broadcastResult.status === 'started' ? (
+                  <>
+                    <p className="font-bold text-sm text-blue-700 mb-1">
+                      Broadcast started!
+                    </p>
+                    <p className="text-sm text-blue-600">
+                      Sending to <strong>{broadcastResult.total} users</strong> in background.
+                    </p>
+                    <p className="text-xs text-blue-500 mt-2">
+                      You will receive a WhatsApp confirmation when complete.
+                      Check Render logs for live progress.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className={`font-bold text-sm mb-2 ${broadcastResult.sent === 0 ? 'text-red-700' : 'text-green-700'}`}>
+                      {broadcastResult.sent === 0 ? 'No messages sent!' : 'Broadcast complete!'}
+                    </p>
+                    <div className="flex items-center space-x-6 text-sm">
+                      <span className="text-green-700 font-bold">Sent: {broadcastResult.sent}</span>
+                      <span className="text-red-600 font-bold">Failed: {broadcastResult.failed}</span>
+                      <span className="text-gray-600">Total: {broadcastResult.total}</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
