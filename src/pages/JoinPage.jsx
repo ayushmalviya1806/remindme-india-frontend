@@ -141,8 +141,25 @@ export default function JoinPage() {
           <div style={styles.successBox}>
             <p style={{ margin: 0, fontSize: '14px', color: '#166534' }}>
               ✅ You will now receive automatic reminders for subscription renewals and important updates.
-            </p>
+            </p>      
           </div>
+
+          <div style={{ background: '#fff8e1', border: '1.5px solid #fbbf24', borderRadius: '12px', padding: '16px', marginTop: '16px', marginBottom: '8px' }}>
+            <p style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: '700', color: '#92400e' }}>
+              ⚡ Last Step — Abhi Karein:
+            </p>
+            <p style={{ margin: '0 0 12px 0', fontSize: '13px', color: '#78350f', lineHeight: '1.5' }}>
+              Reminders activate karne ke liye is bot pe <strong>"Hi"</strong> bhejein:
+            </p>
+            <a
+              href="https://wa.me/916269915175?text=Hi"
+              target="_blank"
+              rel="noopener noreferrer"
+             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: '#25d366', color: '#fff', fontWeight: '700', fontSize: '14px', padding: '12px 20px', borderRadius: '10px', textDecoration: 'none' }}
+            >
+              WhatsApp pe "Hi" Bhejo
+            </a>
+          </div>  
           <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '12px', marginTop: '24px' }}>
             Reply <strong>STOP</strong> on WhatsApp anytime to unsubscribe.
           </p>
