@@ -15,8 +15,9 @@ const QUICK_LINKS = [
 
 const SUPPORT_LINKS = [
   { label: 'Contact Support', href: 'mailto:hello.remindmeindia@gmail.com' },
-  { label: 'Privacy Policy', href: '#' },
-  { label: 'Terms of Service', href: '#' },
+  { label: 'Privacy Policy', href: '/privacy' },
+  { label: 'Terms of Service', href: '/terms-b2b' },
+  { label: 'Data Processing Agreement', href: '/dpa' },
 ];
 
 export default function Footer() {
@@ -67,20 +68,30 @@ export default function Footer() {
           </div>
 
           {/* Col 3 - Support */}
-          <div>
-            <h4 className="font-heading font-bold text-sm text-white/80 mb-4 uppercase tracking-wider">Support</h4>
-            <div className="space-y-3">
-              {SUPPORT_LINKS.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
-          </div>
+<div>
+  <h4 className="font-heading font-bold text-sm text-white/80 mb-4 uppercase tracking-wider">Support</h4>
+  <div className="space-y-3">
+    {SUPPORT_LINKS.map((link) => (
+      link.href.startsWith('/') ? (
+        <Link
+          key={link.label}
+          to={link.href}
+          className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
+        >
+          {link.label}
+        </Link>
+      ) : (
+        <a
+          key={link.label}
+          href={link.href}
+          className="block text-sm text-white/40 hover:text-rm-green transition-colors font-body"
+        >
+          {link.label}
+        </a>
+      )
+    ))}
+  </div>
+</div>
 
           {/* Col 4 - Contact */}
           <div>
