@@ -1,9 +1,9 @@
 const STATS = [
-  '� 1,000+ reminders delivered by Indians',
-  '�📱 850 Million Indians use WhatsApp daily',
+  '🚀 1,500+ reminders delivered by Indians',
+  '📱 850 Million Indians use WhatsApp daily',
   '📬 98% WhatsApp open rate vs 20% email',
   '⏰ Setup in 30 seconds — no app download',
-  '🇮🇳 India ka pehla WhatsApp AI reminder',
+  '🇮🇳 India ka smartest WhatsApp AI reminder',
   '☕ Pro plan — chai se bhi sasta (₹3.3/day)',
 ];
 

@@ -167,7 +167,7 @@ export default function Hero() {
             {/* Badge */}
             <div className="scroll-fade-up inline-flex items-center gap-2 rounded-full px-4 py-2 mb-8" style={{ backgroundColor: '#E8F5E9' }}>
               <span className="text-sm font-medium text-rm-primary font-body">
-                🔥 1,000+ reminders delivered • Powered by GPT-4 AI
+                🔥 1,500+ reminders delivered • AI-Powered • WhatsApp Native
               </span>
             </div>
 
@@ -179,7 +179,7 @@ export default function Hero() {
 
             {/* Subheadline */}
             <p className="scroll-fade-up scroll-fade-up-delay-2 mt-6 text-xl sm:text-2xl font-heading font-semibold text-rm-primary">
-              India ka pehla AI reminder — Hindi, Hinglish, English. No app download.
+              India ka smartest AI reminder — Hindi, Hinglish, English. No app download.
             </p>
 
             {/* Body */}
@@ -196,7 +196,7 @@ export default function Hero() {
                 data-testid="hero-cta-button"
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-lg px-8 py-4 shadow-[0px_12px_32px_rgba(0,109,47,0.3)] hover:shadow-[0px_16px_40px_rgba(0,109,47,0.4)] hover:scale-105 active:scale-95 transition-all duration-300"
               >
-                � WhatsApp pe Start Karo — Free hai
+                🚀 WhatsApp pe Start Karo — Free hai
                 <span>→</span>
               </a>
 
@@ -206,6 +206,7 @@ export default function Hero() {
                 <span>✓ No app download</span>
                 <span>✓ No credit card</span>
                 <span>✓ Setup in 30 seconds</span>
+                <span>✓ Meta Verified Business</span>
                 <span>✓ Made in India 🇮🇳</span>
               </p>
 
@@ -215,7 +216,7 @@ export default function Hero() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                 </span>
-                <span className="text-sm text-rm-muted font-body">1,000+ reminders delivered across India</span>
+                <span className="text-sm text-rm-muted font-body">1,500+ reminders delivered • 313+ users • 98% delivery rate</span>
               </div>
 
               {/* Secondary CTA */}

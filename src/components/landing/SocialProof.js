@@ -11,7 +11,7 @@ const TESTIMONIALS = [
     stars: 5,
     quote: 'Mummy ke liye daily medicine reminder set kiya — Hindi mein. Ab roz time pe yaad aa jaata hai. Unhone koi naya app nahi seekha — WhatsApp toh pehle se chalati hain!',
     name: 'Ayush M.',
-    role: 'Founder & User, Indore',
+    role: "Mom's Reminder Setter, Indore",
     initials: 'AM',
     color: 'bg-emerald-500',
   },
@@ -27,9 +27,9 @@ const TESTIMONIALS = [
 
 const TRUST_ITEMS = [
   '4.9/5 rating',
-  '🔒 Data stored in India',
-  '✅ Powered by Meta WhatsApp API',
-  '🤖 GPT-4 AI Engine',
+  '🔒 Data stored in India (Mumbai)',
+  '✅ Meta Verified Business',
+  '🛡️ DPDP Act 2023 Compliant',
 ];
 
 function StarRating({ count }) {

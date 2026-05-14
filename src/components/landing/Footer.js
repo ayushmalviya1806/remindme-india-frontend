@@ -112,7 +112,7 @@ export default function Footer() {
               📧 hello.remindmeindia@gmail.com
             </a>
             <p className="text-xs text-white/25 font-body leading-relaxed">
-              Powered by OpenAI GPT-4 + Meta WhatsApp API
+              ✓ Meta Verified Business · Made with ❤️ in Indore, India 🇮🇳
             </p>
           </div>
         </div>
