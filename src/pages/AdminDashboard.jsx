@@ -20,9 +20,8 @@ export default function AdminDashboard() {
 
   // B2B Business states
   const [businesses, setBusinesses] = useState([]);
-  const [businessMembers, setBusinessMembers] = useState([]);
-  const [selectedBusiness, setSelectedBusiness] = useState(null);
-  const [showMemberList, setShowMemberList] = useState(false);
+  // REMOVED: businessMembers, selectedBusiness, showMemberList
+  // Per Privacy Policy, founder cannot browse member lists
   const [businessForm, setBusinessForm] = useState({
     businessName: '',
     ownerWhatsapp: '',
@@ -42,9 +41,13 @@ export default function AdminDashboard() {
     subscriptionEndDate: ''
   });
   const [addMemberMsg, setAddMemberMsg] = useState('');
-  const [editingMember, setEditingMember] = useState(null);
-  const [editExpiryDate, setEditExpiryDate] = useState('');
-  const [editExpiryMsg, setEditExpiryMsg] = useState('');
+  // Standalone update expiry form state (no member browsing)
+  const [standaloneUpdateExpiry, setStandaloneUpdateExpiry] = useState({
+    businessId: '',
+    memberWhatsapp: '',
+    newExpiryDate: ''
+  });
+  const [standaloneUpdateMsg, setStandaloneUpdateMsg] = useState('');
   const [csvBusinessId, setCsvBusinessId] = useState('');
   const [csvData, setCsvData] = useState('');
   const [csvImporting, setCsvImporting] = useState(false);
@@ -187,17 +190,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchBusinessMembers = async (businessId) => {
-  if (!secret) return;
-  try {
-    const headers = { 'x-admin-secret': secret };
-    const res = await fetch(`${B2B_BASE}/${businessId}/members`, { headers });
-    const data = await res.json();
-    setBusinessMembers(data.members || []);
-  } catch (error) {
-    console.error('Failed to fetch business members:', error);
-  }
-};
+  // REMOVED: fetchBusinessMembers function
+  // Per Privacy Policy, founder cannot fetch member lists
 
 const fetchQRCode = async (businessId, businessName) => {
   if (!secret) return;
@@ -769,16 +763,7 @@ const fetchData = async (adminSecret) => {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex gap-2">
-                            <button
-                              onClick={async () => {
-                                setSelectedBusiness(business);
-                                setShowMemberList(true);
-                                fetchBusinessMembers(business.id);
-                              }}
-                              className="px-3 py-1 bg-blue-500 text-white rounded-lg text-xs hover:bg-blue-600"
-                            >
-                              View Members
-                            </button>
+                            {/* REMOVED: View Members button — founder cannot browse member lists per Privacy Policy */}
                             <button
                               onClick={() => {
                                 const message = prompt('Enter bulk message:');
@@ -1157,128 +1142,103 @@ const fetchData = async (adminSecret) => {
                 </p>
               )}
             </div>
+
+            {/* Standalone Update Member Expiry — no member browsing */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h2 className="font-bold text-gray-800 mb-1">
+                <span className="text-2xl mr-2">🔧</span>Update Member Expiry
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                Owner-requested only. Type the member's WhatsApp number provided by the business owner.
+                No browsing — founder cannot see member lists.
+              </p>
+              <div className="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Business *</label>
+                  <select
+                    value={standaloneUpdateExpiry.businessId}
+                    onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, businessId: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  >
+                    <option value="">Select Business</option>
+                    {businesses.map(b => (
+                      <option key={b.id} value={b.id}>{b.businessName}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Member WhatsApp *</label>
+                  <input
+                    type="text"
+                    value={standaloneUpdateExpiry.memberWhatsapp}
+                    onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, memberWhatsapp: e.target.value.replace(/\D/g, '')})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    placeholder="919876543210"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Expiry Date *</label>
+                  <input
+                    type="date"
+                    value={standaloneUpdateExpiry.newExpiryDate}
+                    onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, newExpiryDate: e.target.value})}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate) {
+                    setStandaloneUpdateMsg('❌ Sab fields fill karein');
+                    return;
+                  }
+                  if (standaloneUpdateExpiry.memberWhatsapp.length < 10) {
+                    setStandaloneUpdateMsg('❌ Valid WhatsApp number enter karein (with country code)');
+                    return;
+                  }
+                  try {
+                    const res = await fetch(`${B2B_BASE}/members/update-expiry`, {
+                      method: 'POST',
+                      headers: {
+                        'x-admin-secret': secret,
+                        'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                        businessId: standaloneUpdateExpiry.businessId,
+                        memberWhatsapp: standaloneUpdateExpiry.memberWhatsapp,
+                        subscriptionEndDate: standaloneUpdateExpiry.newExpiryDate
+                      })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      setStandaloneUpdateMsg('✅ Expiry updated successfully');
+                      setStandaloneUpdateExpiry({ businessId: '', memberWhatsapp: '', newExpiryDate: '' });
+                    } else {
+                      setStandaloneUpdateMsg(`❌ Failed: ${data.error}`);
+                    }
+                  } catch (error) {
+                    setStandaloneUpdateMsg('❌ Error updating expiry');
+                  }
+                }}
+                disabled={!standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate}
+                className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              >
+                Update Expiry & Notify Member
+              </button>
+              {standaloneUpdateMsg && (
+                <p className={`mt-3 text-sm font-medium ${
+                  standaloneUpdateMsg.includes('✅') ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {standaloneUpdateMsg}
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>
 
-      {/* Member List Modal */}
-      {showMemberList && selectedBusiness && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={() => setShowMemberList(false)}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 w-full max-w-4xl mx-4 max-h-96 overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-gray-800">Members of {selectedBusiness.businessName}</h3>
-              <button onClick={() => setShowMemberList(false)} className="text-gray-500 hover:text-gray-700 text-xl font-bold">×
-              </button>
-            </div>
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">WhatsApp</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subscription End</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Opted In</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {businessMembers.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">No members yet.</td></tr>
-                )}
-                {businessMembers.map(member => (
-                  <tr key={member.id} className="border-b">
-                    <td className="px-4 py-3 text-sm">{member.memberName || '-'}</td>
-                    <td className="px-4 py-3 text-sm font-mono">{member.memberWhatsapp}</td>
-                    <td className="px-4 py-3 text-sm">
-                      {editingMember === member.id ? (
-                        <div className="flex gap-2 items-center">
-                          <input
-                            type="date"
-                            value={editExpiryDate}
-                            onChange={(e) => setEditExpiryDate(e.target.value)}
-                            className="border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-green-500"
-                          />
-                          <button
-                            onClick={async () => {
-                              try {
-                                const res = await fetch(`${B2B_BASE}/members/update-expiry`, {
-                                  method: 'POST',
-                                  headers: {
-                                    'x-admin-secret': secret,
-                                    'Content-Type': 'application/json'
-                                  },
-                                  body: JSON.stringify({
-                                    businessId: selectedBusiness.id,
-                                    memberWhatsapp: member.memberWhatsapp,
-                                    subscriptionEndDate: editExpiryDate
-                                  })
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                  setEditExpiryMsg('✅ Updated!');
-                                  setEditingMember(null);
-                                  fetchBusinessMembers(selectedBusiness.id);
-                                  setTimeout(() => setEditExpiryMsg(''), 3000);
-                                } else {
-                                  setEditExpiryMsg(`❌ ${data.error}`);
-                                }
-                              } catch (error) {
-                                setEditExpiryMsg('❌ Error');
-                              }
-                            }}
-                            className="px-2 py-1 bg-green-500 text-white rounded text-xs"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => setEditingMember(null)}
-                            className="px-2 py-1 bg-gray-300 rounded text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2 items-center">
-                          <span>{formatDate(member.subscriptionEndDate)}</span>
-                          <button
-                            onClick={() => {
-                              setEditingMember(member.id);
-                              setEditExpiryDate(
-                                member.subscriptionEndDate
-                                  ? new Date(member.subscriptionEndDate).toISOString().split('T')[0]
-                                  : ''
-                              );
-                            }}
-                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200"
-                          >
-                            Edit
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${member.optedIn ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {member.optedIn ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm">{formatDate(member.joinedAt)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          {editExpiryMsg && (
-            <p className={`mt-2 text-sm font-medium ${editExpiryMsg.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
-              {editExpiryMsg}
-            </p>
-          )}
-          </div>
-        </div>
-      )}
+      {/* REMOVED: Member list modal — per Privacy Policy founder cannot view member data */}
 
         {/* Broadcast Tab */}
         {activeTab === 'broadcast' && (
