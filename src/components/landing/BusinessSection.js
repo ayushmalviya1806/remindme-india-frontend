@@ -6,10 +6,10 @@ export default function BusinessSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="font-heading font-extrabold text-4xl sm:text-5xl text-rm-text tracking-tight mb-4">
-            Run a Gym, Clinic, or Coaching Center?
+            Gym, Clinic, ya Coaching Center hai?
           </h2>
           <p className="text-xl text-rm-muted font-heading font-semibold mb-8 max-w-2xl mx-auto">
-            Auto-remind your members about subscription renewals on WhatsApp. ₹999/month.
+            Members ke subscription expiry se pehle WhatsApp pe automatic reminder. Setup 5 min. Starts ₹999/month.
           </p>
           <Link
             to="/business"

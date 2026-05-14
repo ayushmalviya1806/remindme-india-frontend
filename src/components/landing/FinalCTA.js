@@ -2,9 +2,9 @@ const WA_LINK = 'https://wa.me/916269915175?text=Hi';
 
 const TRUST_ITEMS = [
   '🔒 100% Free to start',
-  '✅ No spam ever',
-  '🇮🇳 Made in India',
-  '⚡ Works instantly',
+  '✅ Meta Verified Business',
+  '🇮🇳 Made in Indore, India',
+  '⚡ Setup in 30 seconds',
 ];
 
 export default function FinalCTA() {
@@ -45,7 +45,7 @@ export default function FinalCTA() {
             data-testid="final-cta-button"
             className="inline-flex items-center gap-2 rounded-full bg-white text-rm-primary font-heading font-bold text-xl px-10 py-5 shadow-[0px_16px_48px_rgba(0,0,0,0.2)] hover:shadow-[0px_20px_56px_rgba(0,0,0,0.3)] hover:scale-105 active:scale-95 transition-all duration-300"
           >
-            � Abhi Hi Bolo — Free Hai →
+            🚀 Abhi Hi Bolo — Free Hai →
           </a>
           <p className="mt-4 text-sm text-white/60 font-body">
             👆 Tap to open WhatsApp directly

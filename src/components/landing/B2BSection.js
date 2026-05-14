@@ -5,25 +5,25 @@ const B2B_WHATSAPP = 'https://wa.me/916269915175?text=' + encodeURIComponent(
 );
 
 const STATS = [
-  { value: '60%', label: 'fewer no-shows' },
-  { value: '98%', label: 'WhatsApp open rate' },
-  { value: '₹0', label: 'setup cost' },
+  { value: '98%', label: 'delivery rate' },
+  { value: '₹999', label: 'starts per month' },
+  { value: '5 min', label: 'setup time' },
 ];
 
 const USE_CASES = [
   {
-    icon: '🏥',
-    title: 'Clinics & Hospitals',
-    desc: 'Patient appointment reminders. Automatically. Before every visit.',
+    icon: '💪',
+    title: 'Gyms & Fitness Centers',
+    desc: 'Member subscription renewal reminders. Automatic. 7 din pehle se yaad dilana.',
   },
   {
-    icon: '🏪',
-    title: 'Retailers & Businesses',
-    desc: 'Payment dues, order updates, follow-ups — sab automated.',
+    icon: '🏥',
+    title: 'Clinics & Salons',
+    desc: 'Patient appointment reminders. Service follow-ups. Before every visit.',
   },
   {
     icon: '📚',
-    title: 'Coaching & Education',
+    title: 'Coaching & Tuition',
     desc: 'Class reminders, fee alerts, exam notifications for every student.',
   },
 ];
