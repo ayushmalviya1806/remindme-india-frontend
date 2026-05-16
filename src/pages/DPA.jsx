@@ -19,6 +19,24 @@ export default function DPA() {
 
       <div className="max-w-4xl mx-auto px-4 py-8">
 
+        {/* INSTANT DOWNLOAD CTA */}
+        <div className="bg-emerald-50 border-2 border-emerald-700 p-6 rounded-lg mb-6 shadow-md">
+          <h2 className="text-xl font-bold text-emerald-900 mb-2">📄 Download DPA PDF</h2>
+          <p className="text-gray-800 text-sm leading-relaxed mb-4">
+            Instant download for review, internal records, or sharing with your legal team.
+          </p>
+          <a 
+            href="/RemindMeIndiaDPAFormal.pdf"
+            download="RemindMeIndia_DPA.pdf"
+            className="inline-block bg-emerald-700 text-white px-6 py-3 rounded-lg font-semibold hover:bg-emerald-800 transition shadow-sm"
+          >
+            ⬇️ Download DPA PDF
+          </a>
+          <p className="text-gray-600 text-xs mt-3 italic">
+            For most users, downloading is enough — DPA is auto-accepted via subscription. See below for countersigned signature flow.
+          </p>
+        </div>
+
         {/* AUTO-ACCEPTANCE BANNER */}
         <div className="bg-amber-50 border-l-4 border-amber-500 p-5 rounded-lg mb-8 shadow-md">
           <h2 className="text-lg font-bold text-amber-900 mb-2">⚡ Auto-Acceptance Notice</h2>
@@ -27,10 +45,9 @@ export default function DPA() {
             RemindMe India B2B plan and complete payment via our Terms of Service. <strong>No separate signature is required</strong> for standard plans.
           </p>
           <p className="text-gray-800 text-sm mt-3 leading-relaxed">
-            <strong>Need a formal countersigned PDF?</strong> Email{' '}
+            <strong>Need a formal countersigned PDF?</strong> Download above, sign, and email back to{' '}
             <a href="mailto:hello.remindmeindia@gmail.com" className="text-emerald-700 underline">hello.remindmeindia@gmail.com</a>{' '}
-            or send WhatsApp command <strong>"DPA SIGN"</strong> to +91 62699 15175. We will email you a pre-filled 
-            DPA PDF within 24 hours.
+            (subject "DPA COUNTERSIGN REQUEST"). We will countersign and return within 48 hours.
           </p>
         </div>
 
@@ -360,18 +377,25 @@ export default function DPA() {
           </section>
 
           <section className="mb-8 bg-emerald-50 border-l-4 border-emerald-700 p-6 rounded-lg">
-            <h2 className="text-2xl font-bold text-emerald-900 mb-3">15. Formal Signed DPA (Optional)</h2>
+            <h2 className="text-2xl font-bold text-emerald-900 mb-3">15. Formal Signed DPA Process</h2>
             <p className="text-gray-700">
               While this online DPA is fully binding upon subscription, Enterprise clients or businesses requiring 
-              a formal countersigned PDF may request one:
+              a formal countersigned PDF can follow this 2-step process:
             </p>
-            <ul className="list-disc pl-6 text-gray-700 space-y-1 mt-3">
-              <li>📧 Email: <a href="mailto:hello.remindmeindia@gmail.com" className="text-emerald-700 underline">hello.remindmeindia@gmail.com</a> (subject "DPA SIGN REQUEST")</li>
-              <li>💬 WhatsApp: Send "<strong>DPA SIGN</strong>" to +91 62699 15175</li>
-              <li>📞 Owner Direct: +91 74705 78178</li>
-            </ul>
+            <ol className="list-decimal pl-6 text-gray-700 space-y-2 mt-3">
+              <li><strong>Download</strong> the DPA PDF from the button at the top of this page.</li>
+              <li><strong>Sign</strong> and email the signed copy to:
+                <ul className="list-disc pl-6 mt-1">
+                  <li>📧 <a href="mailto:hello.remindmeindia@gmail.com" className="text-emerald-700 underline">hello.remindmeindia@gmail.com</a> (subject "DPA COUNTERSIGN REQUEST")</li>
+                  <li>💬 WhatsApp Owner: <strong>+91 74705 78178</strong></li>
+                </ul>
+              </li>
+            </ol>
             <p className="text-gray-700 mt-3">
-              We will email a pre-filled DPA PDF within 24 hours. Both parties sign and exchange countersigned copies.
+              We countersign and email back within <strong>48 hours</strong>. Faster than emailing for an unsigned PDF.
+            </p>
+            <p className="text-gray-600 text-xs italic mt-3">
+              Alternatively, send "<strong>DPA SIGN</strong>" command to our WhatsApp bot at +91 62699 15175 — you will receive the same download link and instructions.
             </p>
           </section>
 

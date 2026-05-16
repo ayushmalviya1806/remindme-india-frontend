@@ -1,0 +1,67 @@
+# RemindMe India — Frontend Coding Rules
+
+## PROJECT CONTEXT
+React + Tailwind frontend on Vercel for RemindMe India (B2C + B2B WhatsApp reminder service).
+Site: remindmeindia.site. Repo: github.com/ayushmalviya1806/remindme-india-frontend (main branch).
+Tech: React, Tailwind CSS, Lucide React icons, React Router DOM.
+
+## CRITICAL BUILD RULE
+Vercel breaks on ESLint warnings. Always run CI=true npm run build before showing diff.
+Zero warnings tolerated.
+
+## STYLE SYSTEM
+- Tailwind utility classes only
+- Custom colors: rm-primary (green-dark), rm-green (light green), rm-text, rm-muted, rm-beige, rm-surface, rm-wa
+- No inline styles unless using CSS variables
+- Hinglish-friendly copy (mix Hindi-English naturally)
+- Lucide React icons only (no other icon libraries)
+
+## CODING STYLE
+- PowerShell syntax (Windows): semicolons (;) for command chaining
+- No backup files (.bak, .backup, copies)
+- Surgical FIND/REPLACE only — no full file rewrites unless requested
+- Single commit per logical change
+- React functional components with hooks only
+
+## OUTPUT FORMAT
+For every change:
+1. Show diff
+2. Run CI=true npm run build and confirm zero warnings
+3. Wait for user approval before commit/push
+4. Never auto-commit, never auto-push
+
+## BRAND POSITIONING
+- "India's smartest WhatsApp AI assistant" (NEVER "first" — legal risk)
+- "Meta Verified Business" (trust signal)
+- "DPDP Act 2023 Compliant" (regulatory signal)
+- "Made with heart in Indore, India"
+- NEVER expose vendor names (OpenAI, GPT-4, AWS, etc.) on customer-facing pages
+
+## CURRENT STATS (truth, use these only)
+- 1,500+ reminders delivered
+- 343+ users
+- 98% delivery rate
+- Free tier: 10 reminders/month
+- Pro: 99 per month
+- Student: 49 first month (STUDENT50 code)
+
+## B2B PRICING
+- Small: 999 per month
+- Professional: 1999 per month
+- Enterprise: 2999 per month
+- Annual tier in pipeline (9999, 19999, 29999)
+
+## LEGAL LINKS
+- /privacy
+- /terms-b2b
+- /dpa
+
+## TESTIMONIALS RULE
+- Use real testimonials only
+- Ayush M. testimonial is genuine (mom's medicine reminder) — role should be "Mom's Reminder Setter, Indore" not "Founder"
+
+## COMMUNICATION
+- Direct, no fluff
+- Hinglish OK in user-facing copy
+- Show exact code, never pseudo-code
+- Plain text answers only, no JSON UI elements
