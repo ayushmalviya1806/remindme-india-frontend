@@ -13,6 +13,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [activatePhone, setActivatePhone] = useState('');
+  const [activatePaidRecovery, setActivatePaidRecovery] = useState(true);
   const [activateMsg, setActivateMsg] = useState('');
   const [userFilter, setUserFilter] = useState('all');
   const [searchPhone, setSearchPhone] = useState('');
@@ -290,11 +291,18 @@ const fetchData = async (adminSecret) => {
           'Content-Type': 'application/json',
           'x-admin-secret': secret
         },
-        body: JSON.stringify({ phone: activatePhone })
+        body: JSON.stringify({
+          phone: activatePhone,
+          mode: activatePaidRecovery ? 'payment_recovery' : 'gift'
+        })
       });
       const data = await res.json();
       if (data.success) {
-        setActivateMsg(`✅ Pro activated for ${activatePhone}`);
+        setActivateMsg(
+          data.countsInRevenue
+            ? `✅ Pro activated (paid recovery — counts in ₹ revenue) for ${activatePhone}`
+            : `✅ Pro activated (free admin gift — not in ₹ revenue) for ${activatePhone}`
+        );
         fetchData(secret);
       } else {
         setActivateMsg(`❌ Failed: ${data.error}`);
@@ -456,9 +464,15 @@ const fetchData = async (adminSecret) => {
               <h3 className="font-bold text-gray-800 mb-4">💰 Revenue</h3>
               <div className="flex flex-wrap items-center gap-8">
                 <div>
-                  <p className="text-gray-500 text-sm">Monthly Revenue</p>
+                  <p className="text-gray-500 text-sm">Monthly Revenue (paid only)</p>
                   <p className="text-4xl font-bold text-green-600">₹{stats.revenue.monthly}</p>
-                  <p className="text-xs text-gray-400 mt-1">{stats.users.paidPro || 0} paying users × ₹99</p>
+                  <p className="text-xs text-gray-400 mt-1">{stats.revenue.paidSubscribers ?? stats.users.paidPro ?? 0} paid × ₹99</p>
+                  <p className="text-xs text-gray-500 mt-2">
+                    🔧 Admin gifts: {stats.revenue.adminGranted ?? stats.users.adminPro ?? 0} (not in ₹)
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    🎁 Referral Pro: {stats.revenue.referralGranted ?? stats.users.referralPro ?? 0} (not in ₹)
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500 text-sm">Annual Run Rate</p>
@@ -611,7 +625,7 @@ const fetchData = async (adminSecret) => {
         {activeTab === 'activate' && (
           <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md">
             <h2 className="font-bold text-gray-800 mb-4">⚡ Activate Pro Plan</h2>
-            <p className="text-sm text-gray-500 mb-4">Enter user's WhatsApp number to activate Pro:</p>
+            <p className="text-sm text-gray-500 mb-4">Enter user WhatsApp number. Choose why you are activating:</p>
             <div className="space-y-3">
               <input
                 type="text"
@@ -620,6 +634,19 @@ const fetchData = async (adminSecret) => {
                 onChange={(e) => setActivatePhone(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
               />
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-green-200 bg-green-50 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={activatePaidRecovery}
+                  onChange={(e) => setActivatePaidRecovery(e.target.checked)}
+                  className="mt-1"
+                />
+                <span className="text-sm text-gray-700">
+                  <strong>User already paid</strong> (Razorpay / website — webhook failed). Counts in ₹ revenue.
+                  <br />
+                  <span className="text-gray-500">Uncheck for a free admin gift (Admin Pro, not in revenue).</span>
+                </span>
+              </label>
               <button
                 onClick={handleActivatePro}
                 className="w-full py-3 rounded-xl text-white font-bold"
