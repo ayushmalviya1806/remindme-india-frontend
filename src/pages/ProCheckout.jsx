@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Bell, Check, Shield } from 'lucide-react';
 
-const RAZORPAY_PAGE = 'https://pages.razorpay.com/pl_Sdrf3LHiLWvZ4k/view';
-const WA_LINK = 'https://wa.me/916269915175?text=Hi';
+const WA_BASE = 'https://wa.me/916269915175?text=';
+const RAZORPAY_KEY = 'rzp_live_SWSjtJqMlEB9tv';
 
 const PRO_FEATURES = [
   'Unlimited reminders',
@@ -17,7 +17,7 @@ const PRO_FEATURES = [
 export default function ProCheckout() {
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('input'); // 'input' | 'processing' | 'activated' | 'needs_whatsapp'
+  const [status, setStatus] = useState('input'); // 'input' | 'activated'
   const [paymentId, setPaymentId] = useState('');
   const [error, setError] = useState('');
 
@@ -40,13 +40,57 @@ export default function ProCheckout() {
       setError('Please enter a valid 10-digit WhatsApp number');
       return;
     }
-    window.open(RAZORPAY_PAGE, '_blank');
+
+    const fullPhone = digits.length === 10 ? '91' + digits : digits;
+    setLoading(true);
+    setError('');
+
+    const options = {
+      key: RAZORPAY_KEY,
+      amount: 9900,
+      currency: 'INR',
+      name: 'RemindMe India',
+      description: 'Pro Plan - 1 Month Unlimited Reminders',
+      prefill: {
+        contact: '+' + fullPhone,
+      },
+      notes: {
+        whatsapp_phone: fullPhone,
+      },
+      theme: {
+        color: '#006D2F',
+      },
+      handler: function (response) {
+        const payId = response.razorpay_payment_id;
+        setPaymentId(payId);
+        setStatus('activated');
+        setLoading(false);
+        // Auto redirect to WhatsApp with payment ID prefilled
+        const waUrl = WA_BASE + encodeURIComponent(payId);
+        setTimeout(() => {
+          window.open(waUrl, '_blank');
+        }, 1500);
+      },
+      modal: {
+        ondismiss: function () {
+          setLoading(false);
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.on('payment.failed', function () {
+      setError('Payment failed. Please try again.');
+      setLoading(false);
+    });
+    rzp.open();
   };
 
   // ══════════════════════════════════════
   // STATE: Pro Activated Successfully
   // ══════════════════════════════════════
   if (status === 'activated') {
+    const waUrl = WA_BASE + encodeURIComponent(paymentId);
     return (
       <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#FAF9F5' }}>
         <div className="max-w-md w-full text-center">
@@ -54,74 +98,26 @@ export default function ProCheckout() {
             <Check className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="font-extrabold text-3xl text-gray-900 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            Pro Activated! 🎉
-          </h1>
-          <p className="text-gray-500 mb-2">Payment ID: <span className="font-mono text-xs">{paymentId}</span></p>
-          <p className="text-gray-500 mb-8">Your Pro plan is now active for 30 days.</p>
-          <p className="text-green-600 font-semibold mb-4">✅ You'll receive a confirmation on WhatsApp!</p>
-          <a
-            href={WA_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 mb-4"
-            style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-          >
-            💬 Open WhatsApp & Start Using Pro →
-          </a>
-          <p className="text-xs text-gray-400">Set your first unlimited reminder now!</p>
-          <a href="/" className="block mt-6 text-sm text-gray-400 hover:text-gray-600">← Back to Home</a>
-        </div>
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════
-  // STATE: Payment done but user not in DB yet
-  // ══════════════════════════════════════
-  if (status === 'needs_whatsapp') {
-    const payIdLink = `https://wa.me/916269915175?text=${encodeURIComponent(paymentId)}`;
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#FAF9F5' }}>
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="font-extrabold text-3xl text-gray-900 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
             Payment Successful! 🎉
           </h1>
-          <p className="text-gray-500 mb-6">One last step — activate Pro on WhatsApp:</p>
+          <p className="text-gray-500 mb-1">Payment ID:</p>
+          <p className="font-mono text-xs text-gray-400 mb-6">{paymentId}</p>
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6">
+            <p className="text-green-800 font-semibold text-sm mb-1">⚡ One last step!</p>
+            <p className="text-green-700 text-sm">Tap the button below to activate Pro on WhatsApp. Your payment ID will be sent automatically.</p>
+          </div>
           <a
-            href={payIdLink}
+            href={waUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="block w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 mb-4"
+            className="block w-full py-4 rounded-2xl text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 mb-3"
             style={{ background: 'linear-gradient(135deg, #25D366, #128C7E)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
           >
             💬 Activate Pro on WhatsApp →
           </a>
-          <p className="text-sm text-gray-400 mb-2">Your payment ID will be sent automatically.</p>
-          <p className="text-sm text-gray-400">Just tap Send and Pro activates instantly!</p>
+          <p className="text-xs text-gray-400 mb-2">WhatsApp opens automatically — just tap Send!</p>
+          <p className="text-xs text-gray-400">Bot activates your Pro plan instantly after you send.</p>
           <a href="/" className="block mt-6 text-sm text-gray-400 hover:text-gray-600">← Back to Home</a>
-        </div>
-      </div>
-    );
-  }
-
-  // ══════════════════════════════════════
-  // STATE: Processing (verifying payment)
-  // ══════════════════════════════════════
-  if (status === 'processing') {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: '#FAF9F5' }}>
-        <div className="max-w-md w-full text-center">
-          <svg className="animate-spin w-12 h-12 mx-auto mb-6 text-green-600" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <h2 className="font-bold text-xl text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            Activating your Pro plan...
-          </h2>
-          <p className="text-gray-500 mt-2">This takes just a few seconds ⚡</p>
         </div>
       </div>
     );
