@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, Check, Shield } from 'lucide-react';
 
-const API_BASE = 'https://remindme-india.onrender.com/api';
+const RAZORPAY_PAGE = 'https://pages.razorpay.com/pl_Sdrf3LHiLWvZ4k/view';
 const WA_LINK = 'https://wa.me/916269915175?text=Hi';
 
 const PRO_FEATURES = [
@@ -34,96 +34,13 @@ export default function ProCheckout() {
     };
   }, []);
 
-  const handlePayment = async () => {
+  const handlePayment = () => {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) {
       setError('Please enter a valid 10-digit WhatsApp number');
       return;
     }
-
-    const fullPhone = digits.length === 10 ? '91' + digits : digits;
-
-    setLoading(true);
-    setError('');
-
-    try {
-      // Step 1: Create order on backend
-      const orderRes = await fetch(`${API_BASE}/checkout/create-order`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone }),
-      });
-
-      const orderData = await orderRes.json();
-      if (!orderRes.ok || !orderData.order_id) {
-        throw new Error(orderData.error || 'Failed to create order');
-      }
-
-      // Step 2: Open Razorpay Checkout popup with phone pre-filled
-      const options = {
-        key: orderData.key_id,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'RemindMe India',
-        description: 'Pro Plan - 1 Month',
-        order_id: orderData.order_id,
-        prefill: {
-          contact: '+' + fullPhone,
-        },
-        theme: {
-          color: '#006D2F',
-        },
-        handler: async function (response) {
-          // Payment successful — now verify and activate
-          setStatus('processing');
-          setPaymentId(response.razorpay_payment_id);
-
-          try {
-            const verifyRes = await fetch(`${API_BASE}/checkout/verify-and-activate`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                payment_id: response.razorpay_payment_id,
-                phone: fullPhone,
-              }),
-            });
-
-            const verifyData = await verifyRes.json();
-
-            if (verifyData.success) {
-              setStatus('activated');
-            } else if (verifyData.needs_whatsapp) {
-              setStatus('needs_whatsapp');
-            } else {
-              setError(verifyData.error || 'Activation failed');
-              setStatus('input');
-            }
-          } catch (err) {
-            // Even if verify call fails, payment was successful
-            // Webhook will handle activation as backup
-            setStatus('needs_whatsapp');
-          }
-
-          setLoading(false);
-        },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
-          },
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        setError('Payment failed. Please try again.');
-        setLoading(false);
-      });
-      rzp.open();
-
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-      setLoading(false);
-    }
+    window.open(RAZORPAY_PAGE, '_blank');
   };
 
   // ══════════════════════════════════════
