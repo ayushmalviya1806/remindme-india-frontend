@@ -22,6 +22,7 @@ import B2BSuccess from "./pages/B2BSuccess";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsB2B from "./pages/TermsB2B";
 import DPA from "./pages/DPA";
+import GymDemo from './pages/GymDemo';
 
 function LandingPage() {
   useScrollAnimation();
@@ -201,6 +202,7 @@ function App() {
         <Route path="/pro" element={<ProCheckout />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/business" element={<BusinessLanding />} />
+        <Route path="/demo" element={<GymDemo />} />
         <Route path="/b2b-success" element={<B2BSuccess />} />
         <Route path="/join/:code" element={<JoinPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
