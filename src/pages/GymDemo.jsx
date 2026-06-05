@@ -1182,6 +1182,8 @@ function Footer() {
 export default function GymDemo() {
   return (
     <div className="gdRoot" style={{ background: "var(--gd-bg)" }}>
+      <title>WhatsApp Gym Membership Reminder System | RemindMe India</title>
+      <meta name="description" content="Auto-remind gym members before subscription expires on WhatsApp. 7 days, 3 days, 1 day before — automatic. No app needed. Starts at ₹999/month." />
       <style>{GD_CSS}</style>
       <Hero />
       <StatsBar />
