@@ -330,10 +330,10 @@ const fetchData = async (adminSecret) => {
 
   const formatIST = (dateStr) => {
     if (!dateStr) return 'N/A';
-    const ist = new Date(new Date(dateStr).getTime() + 5.5 * 60 * 60 * 1000);
-    return ist.toLocaleString('en-IN', {
+    return new Date(dateStr).toLocaleString('en-IN', {
       day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit', hour12: true
+      hour: '2-digit', minute: '2-digit', hour12: true,
+      timeZone: 'Asia/Kolkata'
     });
   };
 
