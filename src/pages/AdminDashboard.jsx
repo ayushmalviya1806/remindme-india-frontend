@@ -69,6 +69,12 @@ export default function AdminDashboard() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [expandedMessages, setExpandedMessages] = useState({});
 
+  useEffect(() => {
+    if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
+      fetchInbox();
+    }
+  }, [activeTab, authenticated]);
+
   // Toggle message expansion
   const toggleMessage = (id) => {
     setExpandedMessages(prev => ({ ...prev, [id]: !prev[id] }));
@@ -380,7 +386,7 @@ const fetchData = async (adminSecret) => {
           <span className="font-bold text-lg" style={{ color: '#006D2F' }}>RemindMe India Admin</span>
         </div>
         <button
-          onClick={() => fetchData(secret)}
+          onClick={() => { fetchData(secret); if (activeTab === 'inbox') fetchInbox(); }}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50"
         >
           <RefreshCw className="w-4 h-4" /> Refresh
@@ -1265,7 +1271,27 @@ const fetchData = async (adminSecret) => {
         )}
       </div>
 
-      {/* REMOVED: Member list modal — per Privacy Policy founder cannot view member data */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedUser(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-gray-900">{selectedUser.name || 'Unknown'}</h3>
+              <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-mono">{selectedUser.whatsapp_phone_number}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Plan</span><span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{selectedUser.plan}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Reminders Sent</span><span className="font-bold text-green-600">{selectedUser.sentReminders || 0}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Pending</span><span className="font-bold text-blue-600">{selectedUser.pendingReminders || 0}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Joined</span><span>{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('en-IN') : 'N/A'}</span></div>
+              {selectedUser.plan_expires_at && (
+                <div className="flex justify-between"><span className="text-gray-500">Pro Expires</span><span>{new Date(selectedUser.plan_expires_at).toLocaleDateString('en-IN')}</span></div>
+              )}
+            </div>
+            <button onClick={() => setSelectedUser(null)} className="w-full mt-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium">Close</button>
+          </div>
+        </div>
+      )}
 
         {/* Broadcast Tab */}
         {activeTab === 'broadcast' && (
