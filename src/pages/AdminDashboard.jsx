@@ -69,12 +69,13 @@ export default function AdminDashboard() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [expandedMessages, setExpandedMessages] = useState({});
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-useEffect(() => {
-  if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
-    fetchInbox();
-  }
-}, [activeTab, authenticated]); // intentionally omitting fetchInbox and inboxMessages.length
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
+      fetchInbox();
+    }
+  }, [activeTab, authenticated]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   // Toggle message expansion
   const toggleMessage = (id) => {
