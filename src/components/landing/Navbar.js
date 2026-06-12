@@ -29,10 +29,10 @@ export default function Navbar() {
   return (
     <nav
       data-testid="sticky-navbar"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
         scrolled
-          ? 'shadow-[0px_4px_20px_rgba(27,28,26,0.06)]'
-          : ''
+          ? 'border-[rgba(27,28,26,0.07)] shadow-[0_1px_2px_rgba(27,28,26,0.03),0_4px_16px_rgba(27,28,26,0.05),0_12px_32px_rgba(27,28,26,0.04)]'
+          : 'border-transparent'
       }`}
       style={{
         backgroundColor: 'rgba(250, 249, 245, 0.85)',
@@ -86,15 +86,15 @@ export default function Navbar() {
             target="_blank"
             rel="noopener noreferrer"
             data-testid="nav-cta-button"
-            className="hidden lg:inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-2.5 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
+            className="hidden lg:inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_1px_2px_rgba(0,109,47,0.12),0_4px_12px_rgba(0,109,47,0.18),0_12px_28px_rgba(37,211,102,0.2)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_4px_rgba(0,109,47,0.15),0_8px_20px_rgba(0,109,47,0.22),0_16px_36px_rgba(37,211,102,0.28)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 ease-out"
           >
             📱 Free mein Try Karo
-            <span className="text-base">→</span>
+            <span className="text-base transition-transform duration-200 ease-out group-hover:translate-x-0.5">→</span>
           </a>
 
           <a
             href="/pro"
-            className="hidden lg:inline-flex items-center gap-1 rounded-full border-2 border-rm-primary text-rm-primary font-heading font-bold text-sm px-5 py-2.5 hover:bg-rm-primary hover:text-white transition-all duration-300"
+            className="hidden lg:inline-flex items-center gap-1 rounded-full border-2 border-rm-primary text-rm-primary font-heading font-bold text-sm px-5 py-2.5 hover:bg-rm-primary hover:text-white hover:shadow-[0_2px_8px_rgba(0,109,47,0.18),0_8px_20px_rgba(0,109,47,0.14)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 ease-out"
           >
             Get Pro ₹99 →
           </a>
@@ -114,7 +114,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <div
         data-testid="mobile-menu"
-        className={`lg:hidden overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`lg:hidden overflow-hidden transition-all duration-300 [transition-timing-function:cubic-bezier(0.23,1,0.32,1)] ${
           mobileOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
         }`}
         style={{
@@ -153,7 +153,7 @@ export default function Navbar() {
             rel="noopener noreferrer"
             onClick={handleNavClick}
             data-testid="mobile-cta-button"
-            className="block mt-3 text-center rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-3 shadow-lg"
+            className="block mt-3 text-center rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_8px_rgba(0,109,47,0.18),0_8px_20px_rgba(37,211,102,0.22)] active:scale-[0.98] transition-transform duration-150 ease-out"
           >
             📱 Free mein Try Karo →
           </a>

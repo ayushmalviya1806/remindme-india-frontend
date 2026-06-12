@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import "@/App.css";
 import { useScrollAnimation } from "@/hooks/useScrollAnimation";
+import AuroraBackground from "@/components/landing/AuroraBackground";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import StatsBar from "@/components/landing/StatsBar";
@@ -56,7 +57,9 @@ function LandingPage() {
   }, [exitBannerShown]);
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FAF9F5' }}>
+    <div className="relative min-h-screen" style={{ backgroundColor: '#FAF9F5' }}>
+      <AuroraBackground />
+      <div className="relative z-[1]">
       <Navbar />
       <Hero />
       <StatsBar />
@@ -124,7 +127,7 @@ function LandingPage() {
           letterSpacing: '0.5px',
         }}
       >
-        � WhatsApp pe Start Karo — Free hai
+        🚀 WhatsApp pe Start Karo — Free hai
       </a>
     {/* Mobile Exit Intent Banner */}
       {showExitBanner && (
@@ -190,6 +193,7 @@ function LandingPage() {
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }
