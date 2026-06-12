@@ -473,11 +473,12 @@ function PhoneMockup() {
 
           {/* Suggestion chips */}
           <div className="bg-[#ECE5DD] px-2.5 pb-2 pt-0.5 flex gap-1.5 overflow-x-auto no-scrollbar">
-            {CHIPS.map((chip) => (
+            {CHIPS.map((chip, i) => (
               <motion.button
                 key={chip}
                 onClick={() => handleChip(chip)}
                 whileTap={{ scale: 0.92 }}
+                style={{ animationDelay: `${i * 0.35}s` }}
                 className={`shrink-0 bg-white/95 border border-rm-green/25 text-rm-primary text-[12px] font-medium rounded-full px-3 py-1.5 shadow-[0_1px_2px_rgba(27,28,26,0.08)] ${
                   !hasInteracted && !reduceMotion ? 'chip-hint' : ''
                 }`}
