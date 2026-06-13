@@ -529,10 +529,34 @@ export default function AdminDashboard() {
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [expandedMessages, setExpandedMessages] = useState({});
 
+  // Security tab states
+  const [securityStatus, setSecurityStatus] = useState(null);
+  const [securityStatusLoading, setSecurityStatusLoading] = useState(false);
+  const [securityStatusError, setSecurityStatusError] = useState('');
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [blockedLoading, setBlockedLoading] = useState(false);
+  const [blockedError, setBlockedError] = useState('');
+  const [blockPhone, setBlockPhone] = useState('');
+  const [blockReason, setBlockReason] = useState('');
+  const [unblockPhone, setUnblockPhone] = useState('');
+  const [blocking, setBlocking] = useState(false);
+  const [unblocking, setUnblocking] = useState(false);
+  const [unblockingPhone, setUnblockingPhone] = useState(null);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
     if (activeTab === 'inbox' && authenticated && inboxMessages.length === 0) {
       fetchInbox();
+    }
+  }, [activeTab, authenticated]);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    if (activeTab === 'security' && authenticated) {
+      fetchSecurityStatus();
+      fetchSecurityBlocked();
     }
   }, [activeTab, authenticated]);
   /* eslint-enable react-hooks/exhaustive-deps */
@@ -572,6 +596,8 @@ export default function AdminDashboard() {
     setReminders([]);
     setBusinesses([]);
     setInboxMessages([]);
+    setSecurityStatus(null);
+    setBlockedUsers([]);
     setPaletteOpen(false);
   }, []);
 
@@ -668,6 +694,128 @@ export default function AdminDashboard() {
       setInboxLoading(false);
     }
   }, [secret, inboxSkip, handle401]);
+
+  const fetchSecurityStatus = useCallback(async () => {
+    if (!secret) return;
+    setSecurityStatusLoading(true);
+    setSecurityStatusError('');
+    try {
+      const res = await fetch(`${API_BASE}/security/status`, {
+        headers: { 'x-admin-secret': secret }
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (!res.ok) {
+        setSecurityStatusError(data.error || 'Failed to fetch security status');
+        return;
+      }
+      setSecurityStatus(data);
+    } catch {
+      setSecurityStatusError('Error fetching security status');
+    } finally {
+      setSecurityStatusLoading(false);
+    }
+  }, [secret, handle401]);
+
+  const fetchSecurityBlocked = useCallback(async () => {
+    if (!secret) return;
+    setBlockedLoading(true);
+    setBlockedError('');
+    try {
+      const res = await fetch(`${API_BASE}/security/blocked`, {
+        headers: { 'x-admin-secret': secret }
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (!res.ok) {
+        setBlockedError(data.error || 'Failed to fetch blocked users');
+        return;
+      }
+      setBlockedUsers(data.blocked || []);
+    } catch {
+      setBlockedError('Error fetching blocked users');
+    } finally {
+      setBlockedLoading(false);
+    }
+  }, [secret, handle401]);
+
+  const refreshSecurityData = useCallback(async () => {
+    await Promise.all([fetchSecurityStatus(), fetchSecurityBlocked()]);
+  }, [fetchSecurityStatus, fetchSecurityBlocked]);
+
+  const handleBlockSubmit = () => {
+    if (!blockPhone.trim()) {
+      toast.error('Please enter a phone number');
+      return;
+    }
+    setBlockConfirmOpen(true);
+  };
+
+  const executeBlock = async () => {
+    setBlocking(true);
+    try {
+      const res = await fetch(`${API_BASE}/security/block`, {
+        method: 'POST',
+        headers: {
+          'x-admin-secret': secret,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phone: blockPhone.trim(),
+          reason: blockReason.trim() || 'manual_admin_block'
+        })
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`+${blockPhone.trim()} blocked`);
+        setBlockPhone('');
+        setBlockReason('');
+        setBlockConfirmOpen(false);
+        await refreshSecurityData();
+      } else {
+        toast.error(data.error || 'Failed to block number');
+      }
+    } catch {
+      toast.error('Error blocking number');
+    } finally {
+      setBlocking(false);
+    }
+  };
+
+  const handleUnblock = async (phone) => {
+    const target = (phone || '').trim();
+    if (!target) {
+      toast.error('Please enter a phone number');
+      return;
+    }
+    setUnblocking(true);
+    setUnblockingPhone(target);
+    try {
+      const res = await fetch(`${API_BASE}/security/unblock`, {
+        method: 'POST',
+        headers: {
+          'x-admin-secret': secret,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone: target })
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`+${target} unblocked`);
+        if (unblockPhone.trim() === target) setUnblockPhone('');
+        await refreshSecurityData();
+      } else {
+        toast.error(data.error || 'Failed to unblock number');
+      }
+    } catch {
+      toast.error('Error unblocking number');
+    } finally {
+      setUnblocking(false);
+      setUnblockingPhone(null);
+    }
+  };
 
   
   const sendBulkMessage = async (businessId, message) => {
@@ -2474,60 +2622,87 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
     )}
     </AnimatePresence>
 
-        {/* ═══ SECURITY TAB ═══
-            UI PREVIEW ONLY — this tab fires ZERO network calls. Every value is a
-            static placeholder and every control is disabled. When the backend
-            ships, the UI is final and we only wire these three endpoints:
-              GET  /api/admin/security/status                  → { blockedCount, pausedCount, rateLimitEventsToday, blocked: [{ phone, reason, blockedAt }] }
-              POST /api/admin/security/block    { phone, reason }
-              POST /api/admin/security/unblock  { phone }
-            These mirror the existing WhatsApp admin BLOCK / UNBLOCK / SECURITY STATUS commands. */}
+        {/* ═══ SECURITY TAB ═══ */}
         {activeTab === 'security' && (
           <div className="space-y-6">
-            {/* Preview banner */}
-            <div className="flex items-start gap-3 rounded-2xl bg-[#FF9933]/[0.06] border border-[#FF9933]/25 p-4">
-              <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-[#FF9933]/10 text-[#FF9933]">
+            <div className="flex items-start gap-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] p-4">
+              <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-rm-green/10 text-rm-green">
                 <Shield className="w-[18px] h-[18px]" />
               </div>
-              <div>
-                <h2 className="font-heading font-bold text-white/90 flex items-center gap-2">
-                  Security Center
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-[#FF9933] bg-[#FF9933]/10 shadow-[inset_0_0_0_1px_rgba(255,153,51,0.3)]">UI PREVIEW</span>
-                </h2>
-                <p className="text-sm text-[#FFB366]/80 mt-1 leading-relaxed">
-                  Backend endpoints pending — this is the final UI with controls disabled. Values are placeholders until <code className="text-[#FF9933]/90">/api/admin/security/*</code> ships.
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-heading font-bold text-white/90">Security Center</h2>
+                  <button
+                    onClick={() => refreshSecurityData()}
+                    disabled={securityStatusLoading || blockedLoading}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium text-white/60 border border-white/10 hover:border-rm-green/40 hover:text-rm-green disabled:opacity-50 transition-colors duration-200"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${(securityStatusLoading || blockedLoading) ? 'animate-spin' : ''}`} /> Refresh
+                  </button>
+                </div>
+                <p className="text-sm text-white/45 mt-1 leading-relaxed">
+                  Manage paused numbers and monitor abuse protections — mirrors WhatsApp admin BLOCK / UNBLOCK / SECURITY STATUS.
                 </p>
               </div>
             </div>
 
-            {/* System Status — placeholder stat cards */}
+            {/* System Status */}
             <div>
               <h3 className="font-heading font-bold text-sm text-white/90 mb-3">System Status</h3>
+              {securityStatusError && (
+                <div className="mb-4 p-3 rounded-xl bg-red-400/[0.06] border border-red-400/25 flex items-center justify-between gap-3">
+                  <p className="text-sm text-red-400">{securityStatusError}</p>
+                  <button
+                    onClick={() => fetchSecurityStatus()}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 border border-red-400/30 hover:bg-red-400/10 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Blocked Numbers', accent: '#F87171' },
-                  { label: 'Auto-Paused Users', accent: '#FF9933' },
-                  { label: 'Rate-Limit Events (today)', accent: '#7CC5FF' },
+                  { label: 'Blocked Numbers', accent: '#F87171', value: securityStatus?.pausedUsers },
+                  { label: 'Auto-Paused Users', accent: '#FF9933', value: securityStatus?.autoPausedUsers },
+                  { label: '24h Messages', accent: '#7CC5FF', value: securityStatus?.last24hMessages },
                 ].map((card) => (
                   <div key={card.label} className="relative rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 overflow-hidden">
                     <div aria-hidden="true" className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent" />
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs text-white/40 font-medium">{card.label}</p>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-[#FF9933] bg-[#FF9933]/10 shadow-[inset_0_0_0_1px_rgba(255,153,51,0.3)]">pending</span>
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: card.accent, opacity: 0.7 }} />
                     </div>
-                    <p className="font-heading font-extrabold text-3xl tabular-nums text-white/25" style={{ letterSpacing: '-0.02em' }}>—</p>
-                    <p className="mt-1.5 text-[11px] text-white/30">Awaiting <code className="text-white/45">/security/status</code></p>
+                    {securityStatusLoading && securityStatus === null ? (
+                      <AdminSkeleton className="h-9 w-16 rounded" />
+                    ) : (
+                      <p className="font-heading font-extrabold text-3xl tabular-nums text-white/90" style={{ letterSpacing: '-0.02em' }}>
+                        {card.value ?? '—'}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Blocked Numbers table mockup */}
+            {/* Blocked Numbers table */}
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
               <div className="p-4 border-b border-white/[0.07] flex items-center justify-between">
                 <h3 className="font-heading font-bold text-white/90">Blocked Numbers</h3>
-                <span className="text-[11px] text-white/30">Example data — not live</span>
+                <span className="text-[11px] text-white/30 tabular-nums">
+                  {blockedLoading && blockedUsers.length === 0 ? 'Loading…' : `${blockedUsers.length} paused`}
+                </span>
               </div>
+              {blockedError && (
+                <div className="mx-4 mt-4 p-3 rounded-xl bg-red-400/[0.06] border border-red-400/25 flex items-center justify-between gap-3">
+                  <p className="text-sm text-red-400">{blockedError}</p>
+                  <button
+                    onClick={() => fetchSecurityBlocked()}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 border border-red-400/30 hover:bg-red-400/10 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -2538,24 +2713,47 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
                       <th className={TH_CLASS}>Action</th>
                     </tr>
                   </thead>
-                  <tbody className="opacity-50 pointer-events-none select-none">
-                    {[
-                      { phone: '9199xxxxxx01', reason: 'Spam / abuse reports', at: '12 Jun, 09:14 am' },
-                      { phone: '9188xxxxxx47', reason: 'Rate-limit breach (auto)', at: '11 Jun, 06:52 pm' },
-                      { phone: '9177xxxxxx12', reason: 'Manual — owner request', at: '09 Jun, 01:30 pm' },
-                    ].map((row) => (
-                      <tr key={row.phone} className="border-b border-white/[0.04]">
-                        <td className="px-4 py-3 text-sm font-mono text-white/55">
-                          +{row.phone}
-                          <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide text-white/30 bg-white/[0.05]">example</span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-white/45">{row.reason}</td>
-                        <td className="px-4 py-3 text-sm text-white/35 tabular-nums">{row.at}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rm-green bg-rm-green/[0.08] shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)]">Unblock</span>
+                  <tbody>
+                    {blockedLoading && blockedUsers.length === 0 ? (
+                      [0, 1, 2].map((i) => (
+                        <tr key={i} className="border-b border-white/[0.04]">
+                          <td className="px-4 py-3"><AdminSkeleton className="h-4 w-28 rounded" /></td>
+                          <td className="px-4 py-3"><AdminSkeleton className="h-4 w-36 rounded" /></td>
+                          <td className="px-4 py-3"><AdminSkeleton className="h-4 w-24 rounded" /></td>
+                          <td className="px-4 py-3"><AdminSkeleton className="h-7 w-20 rounded-lg" /></td>
+                        </tr>
+                      ))
+                    ) : blockedUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-10 text-center text-sm text-white/35">
+                          No blocked numbers right now.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      blockedUsers.map((row) => (
+                        <tr key={row.whatsapp_phone_number} className="border-b border-white/[0.04]">
+                          <td className="px-4 py-3 text-sm font-mono text-white/75">
+                            +{row.whatsapp_phone_number}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-white/55">
+                            {row.auto_paused_reason || row.reason || '—'}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-white/40 tabular-nums">
+                            {(row.manually_blocked_at || row.timestamp) ? formatIST(row.manually_blocked_at || row.timestamp) : '—'}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() => handleUnblock(row.whatsapp_phone_number)}
+                              disabled={unblocking && unblockingPhone === row.whatsapp_phone_number}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rm-green bg-rm-green/[0.08] shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)] hover:bg-rm-green/[0.14] disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
+                            >
+                              {unblocking && unblockingPhone === row.whatsapp_phone_number ? <BtnSpinner /> : null}
+                              Unblock
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -2563,26 +2761,36 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
 
             {/* Block / Unblock controls */}
             <div className="grid lg:grid-cols-2 gap-6">
-              <AdminPanel title="🚫 Block a Number" sub="Permanently blocks a number from the WhatsApp bot">
+              <AdminPanel title="🚫 Block a Number" sub="Hard-block — bot goes silent. RESUME cannot restore access; only admin unblock does.">
                 <div className="space-y-3">
                   <div>
                     <label className={LABEL_CLASS}>WhatsApp number</label>
-                    <input type="text" disabled placeholder="919876543210" className={`${INPUT_CLASS} font-mono disabled:opacity-50 disabled:cursor-not-allowed`} />
+                    <input
+                      type="text"
+                      value={blockPhone}
+                      onChange={(e) => setBlockPhone(e.target.value)}
+                      placeholder="919876543210"
+                      className={`${INPUT_CLASS} font-mono`}
+                    />
                   </div>
                   <div>
                     <label className={LABEL_CLASS}>Reason</label>
-                    <input type="text" disabled placeholder="Spam / abuse" className={`${INPUT_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`} />
+                    <input
+                      type="text"
+                      value={blockReason}
+                      onChange={(e) => setBlockReason(e.target.value)}
+                      placeholder="Spam / abuse"
+                      className={INPUT_CLASS}
+                    />
                   </div>
-                  <span title="Activates when POST /api/admin/security/block ships" className="block">
-                    <button
-                      disabled
-                      aria-disabled="true"
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white bg-red-500/90 shadow-[0_4px_14px_rgba(239,68,68,0.25)] opacity-40 cursor-not-allowed inline-flex items-center justify-center gap-2"
-                    >
-                      <Lock className="w-4 h-4" /> Block Number
-                    </button>
-                  </span>
-                  <p className="text-[11px] text-white/30 text-center">Activates when the backend endpoint ships.</p>
+                  <button
+                    onClick={handleBlockSubmit}
+                    disabled={blocking}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white bg-red-500/90 shadow-[0_4px_14px_rgba(239,68,68,0.25)] hover:bg-red-500 disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {blocking ? <BtnSpinner /> : <Lock className="w-4 h-4" />}
+                    Block Number
+                  </button>
                 </div>
               </AdminPanel>
 
@@ -2590,31 +2798,55 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
                 <div className="space-y-3">
                   <div>
                     <label className={LABEL_CLASS}>WhatsApp number</label>
-                    <input type="text" disabled placeholder="919876543210" className={`${INPUT_CLASS} font-mono disabled:opacity-50 disabled:cursor-not-allowed`} />
+                    <input
+                      type="text"
+                      value={unblockPhone}
+                      onChange={(e) => setUnblockPhone(e.target.value)}
+                      placeholder="919876543210"
+                      className={`${INPUT_CLASS} font-mono`}
+                    />
                   </div>
-                  <span title="Activates when POST /api/admin/security/unblock ships" className="block">
-                    <button
-                      disabled
-                      aria-disabled="true"
-                      className="w-full py-3 rounded-xl text-sm font-bold text-white/80 border border-white/15 opacity-40 cursor-not-allowed inline-flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-4 h-4" /> Unblock
-                    </button>
-                  </span>
-                  <p className="text-[11px] text-white/30 text-center">Activates when the backend endpoint ships.</p>
+                  <button
+                    onClick={() => handleUnblock(unblockPhone)}
+                    disabled={unblocking}
+                    className="w-full py-3 rounded-xl text-sm font-bold text-white/80 border border-white/15 hover:border-rm-green/40 hover:text-rm-green disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-colors"
+                  >
+                    {unblocking && unblockingPhone === unblockPhone.trim() ? <BtnSpinner /> : <Check className="w-4 h-4" />}
+                    Unblock
+                  </button>
                 </div>
               </AdminPanel>
             </div>
 
-            {/* Security Status — static policy cards (mirror WhatsApp admin SECURITY STATUS) */}
+            {/* Security Status — policy cards */}
             <div>
               <h3 className="font-heading font-bold text-sm text-white/90 mb-3">Security Status</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { icon: '🔒', title: 'Permanent blocks', desc: 'Blocked numbers stay blocked across restarts until manually unblocked.' },
-                  { icon: '⏱️', title: 'Per-user rate limit', desc: 'Each number is throttled to a safe message rate; abusers are auto-paused.' },
-                  { icon: '📏', title: 'Message size limit', desc: 'Oversized inbound payloads are rejected before they reach the handler.' },
-                  { icon: '🛡️', title: 'DDoS protection', desc: 'Burst traffic is shed at the edge to keep the bot responsive for everyone.' },
+                  {
+                    icon: '🔒',
+                    title: 'Permanent blocks',
+                    desc: securityStatus?.protections?.autoPause
+                      || 'Blocked numbers stay blocked across restarts until manually unblocked.'
+                  },
+                  {
+                    icon: '⏱️',
+                    title: 'Per-user rate limit',
+                    desc: securityStatus?.protections?.rateLimit
+                      || 'Each number is throttled to a safe message rate; abusers are auto-paused.'
+                  },
+                  {
+                    icon: '📏',
+                    title: 'Message size limit',
+                    desc: securityStatus?.protections?.sizeLimit
+                      || 'Oversized inbound payloads are rejected before they reach the handler.'
+                  },
+                  {
+                    icon: '🛡️',
+                    title: 'DDoS protection',
+                    desc: securityStatus?.protections?.ipTracking
+                      || 'Burst traffic is shed at the edge to keep the bot responsive for everyone.'
+                  },
                 ].map((p) => (
                   <div key={p.title} className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5">
                     <div className="text-2xl mb-2">{p.icon}</div>
@@ -2723,6 +2955,23 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
         loading={deactivating}
         onConfirm={handleDeactivateBusiness}
         onCancel={() => setDeactivateDialog({ open: false, businessId: '', businessName: '' })}
+      />
+
+      {/* ── Block number confirmation ── */}
+      <ConfirmDialog
+        open={blockConfirmOpen}
+        title={`Block +${blockPhone.trim()}?`}
+        body="Permanent hard-block — the bot will ignore this number completely until you unblock it here."
+        consequences={[
+          'All bot engagement stops immediately (no replies, no reminders)',
+          'Sending RESUME will NOT restore access — only admin unblock can',
+          blockReason.trim() ? `Reason: ${blockReason.trim()}` : 'Reason: manual_admin_block',
+        ]}
+        confirmLabel={blocking ? 'Blocking…' : 'Block number'}
+        danger
+        loading={blocking}
+        onConfirm={executeBlock}
+        onCancel={() => setBlockConfirmOpen(false)}
       />
 
       {/* ── Command Palette (Ctrl/Cmd+K) ── */}
