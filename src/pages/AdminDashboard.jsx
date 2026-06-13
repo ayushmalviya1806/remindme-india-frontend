@@ -1,12 +1,472 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Bell, RefreshCw, Lock } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo, startTransition } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { Toaster, toast } from 'sonner';
+import { Command } from 'cmdk';
+import * as RadixSelect from '@radix-ui/react-select';
+import {
+  Bell,
+  RefreshCw,
+  Lock,
+  LogOut,
+  LayoutDashboard,
+  Users as UsersIcon,
+  Zap,
+  Building2,
+  Megaphone,
+  Inbox as InboxIcon,
+  Shield,
+  ChevronsLeft,
+  Search,
+  AlertTriangle,
+  Loader2,
+  X,
+  Check,
+  ChevronDown,
+} from 'lucide-react';
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+} from 'recharts';
+import { useCountUp } from '@/hooks/useCountUp';
 
 const API_BASE = 'https://remindme-india.onrender.com/api/admin';
 const B2B_BASE = 'https://remindme-india.onrender.com/api/business';
 
+const SECRET_STORAGE_KEY = 'rm_admin_secret';
+
+const ROW_PAGE = 50;
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+};
+
+const formatIST = (dateStr) => {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', hour12: true,
+    timeZone: 'Asia/Kolkata'
+  });
+};
+
+/* ── Form primitives (dark) ── */
+
+const INPUT_CLASS =
+  'w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none focus:border-rm-green/50 focus:ring-2 focus:ring-rm-green/15 transition-colors duration-200 [color-scheme:dark]';
+const LABEL_CLASS = 'block text-xs font-semibold text-white/45 mb-1.5';
+const BTN_PRIMARY =
+  'w-full py-3 rounded-xl text-white font-heading font-bold text-sm bg-gradient-to-br from-rm-primary to-rm-green shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_14px_rgba(0,109,47,0.35)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_6px_20px_rgba(37,211,102,0.35)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] disabled:opacity-40 disabled:hover:translate-y-0 disabled:cursor-not-allowed transition-all duration-200 ease-out inline-flex items-center justify-center gap-2';
+
+function BtnSpinner() {
+  return <Loader2 className="w-4 h-4 animate-spin" />;
+}
+
+/* Shared dark select (Radix) — native <select> popups are OS-painted white on
+   Windows/Chrome and can't be themed, so every dropdown goes through this.
+   VALUE SEMANTICS: emits the exact same value strings as the old <option>s;
+   '' (empty/placeholder) maps to undefined for Radix and never reaches setters. */
+function DarkSelect({ value, onChange, options, placeholder = 'Select…', ariaLabel }) {
+  return (
+    <RadixSelect.Root value={value || undefined} onValueChange={onChange}>
+      <RadixSelect.Trigger
+        aria-label={ariaLabel || placeholder}
+        className="w-full flex items-center justify-between gap-2 bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white text-left outline-none focus:border-rm-green/50 focus:ring-2 focus:ring-rm-green/15 data-[placeholder]:text-white/25 transition-colors duration-200"
+      >
+        <span className="truncate">
+          <RadixSelect.Value placeholder={placeholder} />
+        </span>
+        <RadixSelect.Icon>
+          <ChevronDown className="w-4 h-4 text-white/30 shrink-0" />
+        </RadixSelect.Icon>
+      </RadixSelect.Trigger>
+      <RadixSelect.Portal>
+        <RadixSelect.Content
+          position="popper"
+          sideOffset={6}
+          className="z-[120] w-[var(--radix-select-trigger-width)] max-h-72 overflow-hidden rounded-xl bg-[#161A17] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_24px_64px_rgba(0,0,0,0.6)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-top-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 motion-reduce:animate-none"
+        >
+          <RadixSelect.ScrollUpButton className="flex items-center justify-center h-6 text-white/30">
+            <ChevronDown className="w-3.5 h-3.5 rotate-180" />
+          </RadixSelect.ScrollUpButton>
+          <RadixSelect.Viewport className="p-1.5">
+            {options.map((o) => (
+              <RadixSelect.Item
+                key={o.value}
+                value={o.value}
+                className="relative flex items-center rounded-lg pl-3 pr-9 py-2.5 text-sm text-white/70 outline-none cursor-pointer select-none data-[highlighted]:bg-rm-green/[0.12] data-[highlighted]:text-rm-green data-[state=checked]:text-rm-green transition-colors duration-100"
+              >
+                <RadixSelect.ItemText>{o.label}</RadixSelect.ItemText>
+                <RadixSelect.ItemIndicator className="absolute right-3">
+                  <Check className="w-3.5 h-3.5" />
+                </RadixSelect.ItemIndicator>
+              </RadixSelect.Item>
+            ))}
+          </RadixSelect.Viewport>
+          <RadixSelect.ScrollDownButton className="flex items-center justify-center h-6 text-white/30">
+            <ChevronDown className="w-3.5 h-3.5" />
+          </RadixSelect.ScrollDownButton>
+        </RadixSelect.Content>
+      </RadixSelect.Portal>
+    </RadixSelect.Root>
+  );
+}
+
+/* Styled confirmation dialog with consequence summary — replaces window.confirm */
+function ConfirmDialog({ open, title, body, consequences = [], confirmLabel, danger = false, loading = false, onConfirm, onCancel }) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[90] flex items-center justify-center px-4 bg-black/65"
+          onClick={onCancel}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+            className="w-full max-w-md rounded-2xl bg-[#131714] border border-white/10 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_32px_80px_rgba(0,0,0,0.6)]"
+            onClick={(e) => e.stopPropagation()}
+            role="alertdialog"
+            aria-label={title}
+          >
+            <div className="flex items-start gap-3 mb-4">
+              <div className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center ${danger ? 'bg-red-500/10 text-red-400' : 'bg-rm-green/10 text-rm-green'}`}>
+                <AlertTriangle className="w-[18px] h-[18px]" />
+              </div>
+              <div>
+                <h3 className="font-heading font-bold text-white">{title}</h3>
+                {body && <p className="text-sm text-white/50 mt-1 leading-relaxed">{body}</p>}
+              </div>
+            </div>
+            {consequences.length > 0 && (
+              <ul className="mb-5 rounded-xl bg-white/[0.03] border border-white/[0.07] divide-y divide-white/[0.05]">
+                {consequences.map((c) => (
+                  <li key={c} className="px-4 py-2.5 text-[13px] text-white/55 flex items-start gap-2">
+                    <span className={danger ? 'text-red-400/80' : 'text-rm-green/80'}>•</span>
+                    {c}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={onCancel}
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:bg-white/[0.05] transition-colors duration-150"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={loading}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-bold text-white inline-flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-60 ${
+                  danger
+                    ? 'bg-red-500/90 hover:bg-red-500 shadow-[0_4px_14px_rgba(239,68,68,0.3)]'
+                    : 'bg-gradient-to-br from-rm-primary to-rm-green shadow-[0_4px_14px_rgba(0,109,47,0.35)]'
+                }`}
+              >
+                {loading && <BtnSpinner />}
+                {confirmLabel}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+/* ── Table primitives (dark) ── */
+
+function PlanBadge({ plan }) {
+  const pro = plan === 'PRO';
+  return (
+    <span
+      className={`px-2 py-1 rounded-full text-[11px] font-bold tracking-wide ${
+        pro
+          ? 'bg-rm-green/[0.12] text-rm-green shadow-[inset_0_0_0_1px_rgba(37,211,102,0.3)]'
+          : 'bg-white/[0.05] text-white/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
+      }`}
+    >
+      {plan}
+    </span>
+  );
+}
+
+const STATUS_BADGE = {
+  SENT: 'bg-rm-green/[0.12] text-rm-green shadow-[inset_0_0_0_1px_rgba(37,211,102,0.3)]',
+  PENDING: 'bg-[#7CC5FF]/[0.1] text-[#7CC5FF] shadow-[inset_0_0_0_1px_rgba(124,197,255,0.3)]',
+  CANCELLED: 'bg-red-400/[0.1] text-red-400 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.3)]',
+};
+
+function StatusBadge({ status }) {
+  return (
+    <span className={`px-2 py-1 rounded-full text-[11px] font-bold tracking-wide ${STATUS_BADGE[status] || 'bg-white/[0.05] text-white/45 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'}`}>
+      {status}
+    </span>
+  );
+}
+
+const TH_CLASS = 'sticky top-0 z-10 bg-[#10140E] text-left px-4 py-3 text-[10px] font-bold tracking-[0.12em] uppercase text-white/35 border-b border-white/[0.07]';
+
+function SortableTh({ label, sortKey, sort, onSort }) {
+  const active = sort.key === sortKey;
+  return (
+    <th className={`${TH_CLASS} cursor-pointer select-none hover:text-white/70 transition-colors duration-150`} onClick={() => onSort(sortKey)}>
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <motion.svg
+          width="10"
+          height="10"
+          viewBox="0 0 10 10"
+          animate={{ rotate: active && sort.dir === 'asc' ? 180 : 0, opacity: active ? 1 : 0.25 }}
+          transition={{ duration: 0.18 }}
+          className={active ? 'text-rm-green' : 'text-white/40'}
+        >
+          <path d="M2 3.5 L5 6.5 L8 3.5" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </motion.svg>
+      </span>
+    </th>
+  );
+}
+
+/* Memoized rows: re-render only when their own data changes; fast 20ms entrance
+   stagger capped at the first 20 rows so long pages never feel slow */
+const UserRow = memo(function UserRow({ user, index, onSelect, reduce }) {
+  return (
+    <motion.tr
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 20) * 0.02 }}
+      onClick={() => onSelect(user)}
+      className="group cursor-pointer border-b border-white/[0.04] hover:bg-rm-green/[0.05] transition-colors duration-150"
+    >
+      <td className="px-4 py-3 text-sm font-mono text-white/80 group-hover:text-rm-green transition-colors duration-150">{user.whatsapp_phone_number}</td>
+      <td className="px-4 py-3 text-sm text-white/65">{user.name || 'Unknown'}</td>
+      <td className="px-4 py-3"><PlanBadge plan={user.plan} /></td>
+      <td className="px-4 py-3 text-sm tabular-nums">
+        <span className="text-rm-green">{user.sentReminders} sent</span>
+        <span className="text-white/25">{' · '}</span>
+        <span className="text-[#7CC5FF]">{user.pendingReminders} pending</span>
+      </td>
+      <td className="px-4 py-3 text-sm text-white/40">{formatDate(user.created_at)}</td>
+    </motion.tr>
+  );
+});
+
+const ReminderRow = memo(function ReminderRow({ reminder, index, reduce }) {
+  return (
+    <motion.tr
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 20) * 0.02 }}
+      className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors duration-150"
+    >
+      <td className="px-4 py-3 text-sm font-medium text-white/80">{reminder.title}</td>
+      <td className="px-4 py-3 text-sm font-mono text-white/45">{reminder.user?.whatsapp_phone_number}</td>
+      <td className="px-4 py-3"><StatusBadge status={reminder.status} /></td>
+      <td className="px-4 py-3 text-sm text-white/55">{reminder.is_recurring ? `🔁 ${reminder.frequency}` : '1x'}</td>
+      <td className="px-4 py-3 text-sm text-white/40">{formatIST(reminder.next_send_at)}</td>
+    </motion.tr>
+  );
+});
+
+/* Inbox message card — memoized so toggling one message's expand state doesn't
+   re-render the whole list. Same 120-char show-more/less truncation as before. */
+const InboxCard = memo(function InboxCard({ message, index, expanded, onToggle, reduce }) {
+  const body = message.message || '';
+  const isLong = body.length > 120;
+  return (
+    <motion.div
+      initial={reduce ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1], delay: Math.min(index, 20) * 0.02 }}
+      className="group relative rounded-xl bg-white/[0.03] border border-white/[0.07] pl-5 pr-4 py-4 hover:-translate-y-0.5 hover:border-white/[0.12] hover:bg-white/[0.05] transition-all duration-200"
+    >
+      {/* unread-style left accent */}
+      <span aria-hidden="true" className="absolute left-0 top-3.5 bottom-3.5 w-[3px] rounded-full bg-rm-green/40 group-hover:bg-rm-green transition-colors duration-200" />
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="min-w-0">
+          <p className="font-medium text-white/85 truncate">{message.userName || 'Unknown User'}</p>
+          <p className="text-xs font-mono text-white/40">+{message.phone}</p>
+        </div>
+        <p className="text-[11px] text-white/35 shrink-0 tabular-nums">
+          {message.createdAt
+            ? new Date(message.createdAt).toLocaleString('en-IN', {
+                day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata',
+              })
+            : 'N/A'}{' '}
+          IST
+        </p>
+      </div>
+      <p className="text-sm text-white/65 leading-relaxed whitespace-pre-wrap break-words">
+        {isLong && !expanded ? body.slice(0, 120) + '…' : body}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => onToggle(message.id)}
+          className="mt-1.5 text-[13px] font-semibold text-rm-green hover:text-rm-green/80 transition-colors duration-150"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </motion.div>
+  );
+});
+
+/* ── Overview building blocks (dark command-center) ── */
+
+const CHART_TOOLTIP_STYLE = {
+  background: '#161A17',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 12,
+  color: '#fff',
+  fontSize: 12,
+};
+
+function AdminPanel({ title, sub, children, className = '', testId }) {
+  return (
+    <div data-testid={testId} className={`relative rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 overflow-hidden ${className}`}>
+      <div aria-hidden="true" className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.15] to-transparent" />
+      {title && (
+        <div className="mb-4">
+          <h3 className="font-heading font-bold text-sm text-white/90">{title}</h3>
+          {sub && <p className="text-[11px] text-white/35 mt-0.5">{sub}</p>}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+function AdminStatCard({ label, value, prefix = '', suffix = '', sub, accent = '#25D366', delay = 0 }) {
+  const { ref, value: display } = useCountUp(value || 0, { duration: 1.1, delay });
+  return (
+    <div
+      ref={ref}
+      className="group relative rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 overflow-hidden hover:-translate-y-0.5 transition-transform duration-200 ease-out"
+    >
+      <div aria-hidden="true" className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.18] to-transparent" />
+      <div
+        aria-hidden="true"
+        className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{ boxShadow: `0 14px 36px ${accent}2b, inset 0 0 0 1px ${accent}33` }}
+      />
+      <p className="text-xs text-white/40 font-medium mb-2">{label}</p>
+      <p className="font-heading font-extrabold text-3xl tabular-nums" style={{ color: accent, letterSpacing: '-0.02em' }}>
+        {prefix}
+        {display.toLocaleString('en-IN')}
+        {suffix}
+      </p>
+      {sub && <div className="mt-1.5 text-[11px] text-white/35 leading-relaxed">{sub}</div>}
+    </div>
+  );
+}
+
+function RevenueFigure({ monthly }) {
+  const { ref, value } = useCountUp(monthly || 0, { duration: 1.4 });
+  return (
+    <div ref={ref}>
+      <p className="text-[11px] text-white/35 mb-1">Monthly revenue</p>
+      <p
+        className="font-heading font-extrabold text-5xl tabular-nums"
+        style={{
+          letterSpacing: '-0.02em',
+          background: 'linear-gradient(135deg, #7CF2A8, #25D366)',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '0 0 32px rgba(37,211,102,0.25)',
+        }}
+      >
+        ₹{value.toLocaleString('en-IN')}
+      </p>
+    </div>
+  );
+}
+
+function SegmentedBar({ segments }) {
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  if (total === 0) {
+    return <p className="text-xs text-white/30">No subscribers yet — pehla paid user aane wala hai 💪</p>;
+  }
+  return (
+    <div>
+      <div className="flex h-3 rounded-full overflow-hidden bg-white/[0.06]">
+        {segments.map(
+          (s) =>
+            s.value > 0 && (
+              <motion.div
+                key={s.label}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
+                style={{ width: `${(s.value / total) * 100}%`, background: s.color, transformOrigin: 'left center' }}
+              />
+            )
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
+        {segments.map((s) => (
+          <span key={s.label} className="inline-flex items-center gap-1.5 text-[11px] text-white/50">
+            <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+            {s.label}: <span className="text-white/80 font-semibold tabular-nums">{s.value}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AdminSkeleton({ className = '' }) {
+  return <div className={`admin-skeleton ${className}`} />;
+}
+
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'users', label: 'Users', icon: UsersIcon },
+  { id: 'reminders', label: 'Reminders', icon: Bell },
+  { id: 'activate', label: 'Activate Pro', icon: Zap },
+  { id: 'business', label: 'Business', icon: Building2 },
+  { id: 'broadcast', label: 'Broadcast', icon: Megaphone },
+  { id: 'inbox', label: 'Inbox', icon: InboxIcon },
+  { id: 'security', label: 'Security', icon: Shield },
+];
+
+/* Broadcast audience segments. `noun` feeds the confirm-dialog consequence copy;
+   `statsKey` reads the live count straight from existing /stats aggregates —
+   value strings ('all'|'free'|'pro') are byte-identical to the old radios. */
+const BROADCAST_FILTERS = [
+  { value: 'all', label: 'All Users', icon: '🌍', noun: 'all users', statsKey: 'total' },
+  { value: 'free', label: 'Free Users', icon: '🆓', noun: 'free users', statsKey: 'free' },
+  { value: 'pro', label: 'Pro Users', icon: '🌟', noun: 'Pro users', statsKey: 'pro' },
+];
+
 export default function AdminDashboard() {
-  const [secret, setSecret] = useState('');
+  const reducedMotion = useReducedMotion();
+  const [secret, setSecret] = useState(() => sessionStorage.getItem(SECRET_STORAGE_KEY) || '');
   const [authenticated, setAuthenticated] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const searchInputRef = useRef(null);
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [reminders, setReminders] = useState([]);
@@ -77,10 +537,10 @@ export default function AdminDashboard() {
   }, [activeTab, authenticated]);
   /* eslint-enable react-hooks/exhaustive-deps */
 
-  // Toggle message expansion
-  const toggleMessage = (id) => {
+  // Toggle message expansion (stable ref so memoized InboxCards skip re-render)
+  const toggleMessage = useCallback((id) => {
     setExpandedMessages(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
   
   // QR Code modal states
   const [qrModal, setQrModal] = useState({
@@ -90,7 +550,45 @@ export default function AdminDashboard() {
     joinUrl: ''
   });
 
-  const sendBroadcast = async () => {
+  // Dialog + button-loading states (Phase 4)
+  const [bulkDialog, setBulkDialog] = useState({ open: false, businessId: '', businessName: '' });
+  const [bulkSending, setBulkSending] = useState(false);
+  const [deactivateDialog, setDeactivateDialog] = useState({ open: false, businessId: '', businessName: '' });
+  const [deactivating, setDeactivating] = useState(false);
+  const [creatingBusiness, setCreatingBusiness] = useState(false);
+  const [sendingReminder, setSendingReminder] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+  const [updatingExpiry, setUpdatingExpiry] = useState(false);
+  const [activating, setActivating] = useState(false);
+
+  const [broadcastConfirmOpen, setBroadcastConfirmOpen] = useState(false);
+
+  const handleLogout = useCallback(() => {
+    sessionStorage.removeItem(SECRET_STORAGE_KEY);
+    setAuthenticated(false);
+    setSecret('');
+    setStats(null);
+    setUsers([]);
+    setReminders([]);
+    setBusinesses([]);
+    setInboxMessages([]);
+    setPaletteOpen(false);
+  }, []);
+
+  /* Central 401 guard — any expired/invalid secret kicks back to login */
+  const handle401 = useCallback(() => {
+    toast.error('Session expired — please log in again');
+    handleLogout();
+  }, [handleLogout]);
+
+  /* Tab switches are non-urgent renders: the sidebar click paints immediately,
+     heavy section mounts (big tables) render interruptibly behind it */
+  const switchTab = useCallback((id) => {
+    startTransition(() => setActiveTab(id));
+  }, []);
+
+  /* Opens the styled confirmation — same validations as before */
+  const requestBroadcast = () => {
     if (!secret) {
       setBroadcastError('Please login first');
       return;
@@ -99,10 +597,11 @@ export default function AdminDashboard() {
       setBroadcastError('Message cannot be empty');
       return;
     }
+    setBroadcastError('');
+    setBroadcastConfirmOpen(true);
+  };
 
-    const confirmed = window.confirm(`Are you sure? This will send to potentially hundreds of users and cannot be undone.`);
-    if (!confirmed) return;
-
+  const sendBroadcast = async () => {
     setBroadcastLoading(true);
     setBroadcastError('');
     setBroadcastResult(null);
@@ -119,10 +618,12 @@ export default function AdminDashboard() {
           filter: broadcastFilter
         })
       });
+      if (res.status === 401) { handle401(); return; }
       const data = await res.json();
       if (data.success) {
         setBroadcastResult(data);
         setBroadcastMessage('');
+        toast.success('Broadcast accepted by server');
       } else {
         setBroadcastError(data.error || 'Failed to send broadcast');
       }
@@ -130,6 +631,7 @@ export default function AdminDashboard() {
       setBroadcastError('Error sending broadcast');
     } finally {
       setBroadcastLoading(false);
+      setBroadcastConfirmOpen(false);
     }
   };
 
@@ -145,6 +647,7 @@ export default function AdminDashboard() {
       const res = await fetch(url, {
         headers: { 'x-admin-secret': secret }
       });
+      if (res.status === 401) { handle401(); return; }
       const data = await res.json();
       if (data.success) {
         if (loadMore) {
@@ -164,18 +667,19 @@ export default function AdminDashboard() {
     } finally {
       setInboxLoading(false);
     }
-  }, [secret, inboxSkip]);
+  }, [secret, inboxSkip, handle401]);
 
   
   const sendBulkMessage = async (businessId, message) => {
     if (!secret) {
-      alert('Please login first');
+      toast.error('Please login first');
       return;
     }
     if (!message.trim()) {
-      alert('Please enter a message');
+      toast.error('Please enter a message');
       return;
     }
+    setBulkSending(true);
     try {
       const headers = { 'x-admin-secret': secret };
       const res = await fetch(`${B2B_BASE}/send-bulk`, {
@@ -186,16 +690,20 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({ businessId, message })
       });
+      if (res.status === 401) { handle401(); return; }
       const data = await res.json();
       if (data.success) {
-        alert(`✅ Message sent to ${data.sent} members (${data.failed} failed)`);
+        toast.success(`Message sent to ${data.sent} members (${data.failed} failed)`);
         setBulkMessage('');
-        fetchData(secret);
+        setBulkDialog({ open: false, businessId: '', businessName: '' });
+        fetchData(secret, { silent: true });
       } else {
-        alert(`❌ Failed: ${data.error}`);
+        toast.error(`Failed: ${data.error}`);
       }
     } catch (error) {
-      alert('❌ Error sending bulk message');
+      toast.error('Error sending bulk message');
+    } finally {
+      setBulkSending(false);
     }
   };
 
@@ -207,6 +715,7 @@ const fetchQRCode = async (businessId, businessName) => {
   try {
     const headers = { 'x-admin-secret': secret };
     const res = await fetch(`${B2B_BASE}/${businessId}/qr`, { headers });
+    if (res.status === 401) { handle401(); return; }
     const data = await res.json();
     if (data.success) {
       setQrModal({
@@ -216,15 +725,179 @@ const fetchQRCode = async (businessId, businessName) => {
         joinUrl: data.joinUrl
       });
     } else {
-      alert('Failed to generate QR code');
+      toast.error('Failed to generate QR code');
     }
   } catch (error) {
     console.error('Failed to fetch QR code:', error);
-    alert('Failed to generate QR code');
+    toast.error('Failed to generate QR code');
   }
 };
 
-const fetchData = async (adminSecret) => {
+  /* Deactivate — request byte-identical to the original confirm() flow */
+  const handleDeactivateBusiness = async () => {
+    setDeactivating(true);
+    try {
+      const headers = { 'x-admin-secret': secret };
+      const res = await fetch(`${B2B_BASE}/${deactivateDialog.businessId}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (res.status === 401) { handle401(); return; }
+      toast.success(`${deactivateDialog.businessName} deactivated`);
+      setDeactivateDialog({ open: false, businessId: '', businessName: '' });
+      fetchData(secret, { silent: true });
+    } catch (error) {
+      toast.error('Error deactivating business');
+    } finally {
+      setDeactivating(false);
+    }
+  };
+
+  const handleCreateBusiness = async () => {
+    const headers = { 'x-admin-secret': secret };
+    setCreatingBusiness(true);
+    try {
+      const res = await fetch(`${B2B_BASE}/create`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(businessForm)
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Business created! Code: ${data.business.businessCode} — welcome WhatsApp sent to owner.`);
+        setBusinessForm({
+          businessName: '',
+          ownerWhatsapp: '',
+          industryType: 'gym',
+          plan: 'small'
+        });
+        fetchData(secret, { silent: true });
+      } else {
+        toast.error(`Failed: ${data.error}`);
+      }
+    } catch (error) {
+      toast.error('Error creating business');
+    } finally {
+      setCreatingBusiness(false);
+    }
+  };
+
+  const handleSendReminder = async () => {
+    if (!individualMessage.memberWhatsapp || !individualMessage.message || !individualMessage.businessId) {
+      toast.error('Please fill all fields');
+      return;
+    }
+    const headers = { 'x-admin-secret': secret };
+    setSendingReminder(true);
+    try {
+      const res = await fetch(`${B2B_BASE}/send-reminder`, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(individualMessage)
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Message sent successfully!');
+        setIndividualMessage({ memberWhatsapp: '', message: '', businessId: '' });
+      } else {
+        toast.error(`Failed: ${data.error}`);
+      }
+    } catch (error) {
+      toast.error('Error sending message');
+    } finally {
+      setSendingReminder(false);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!addMemberForm.businessId || !addMemberForm.memberWhatsapp) {
+      setAddMemberMsg('Business aur WhatsApp number required hai');
+      return;
+    }
+    if (addMemberForm.memberWhatsapp.length < 10) {
+      setAddMemberMsg('Valid WhatsApp number enter karein (with country code)');
+      return;
+    }
+    setAddingMember(true);
+    try {
+      const res = await fetch(`${B2B_BASE}/members/add`, {
+        method: 'POST',
+        headers: {
+          'x-admin-secret': secret,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(addMemberForm)
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        setAddMemberMsg('Member added! Welcome WhatsApp sent.');
+        toast.success('Member added — welcome WhatsApp sent');
+        setAddMemberForm({
+          businessId: '',
+          memberWhatsapp: '',
+          memberName: '',
+          subscriptionEndDate: ''
+        });
+        fetchData(secret, { silent: true });
+      } else {
+        setAddMemberMsg(`Failed: ${data.error}`);
+      }
+    } catch (error) {
+      setAddMemberMsg('Error adding member');
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleUpdateExpiry = async () => {
+    if (!standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate) {
+      setStandaloneUpdateMsg('❌ Sab fields fill karein');
+      return;
+    }
+    if (standaloneUpdateExpiry.memberWhatsapp.length < 10) {
+      setStandaloneUpdateMsg('❌ Valid WhatsApp number enter karein (with country code)');
+      return;
+    }
+    setUpdatingExpiry(true);
+    try {
+      const res = await fetch(`${B2B_BASE}/members/update-expiry`, {
+        method: 'POST',
+        headers: {
+          'x-admin-secret': secret,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          businessId: standaloneUpdateExpiry.businessId,
+          memberWhatsapp: standaloneUpdateExpiry.memberWhatsapp,
+          subscriptionEndDate: standaloneUpdateExpiry.newExpiryDate
+        })
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        setStandaloneUpdateMsg('✅ Expiry updated successfully');
+        toast.success('Expiry updated — member notified');
+        setStandaloneUpdateExpiry({ businessId: '', memberWhatsapp: '', newExpiryDate: '' });
+      } else {
+        setStandaloneUpdateMsg(`❌ Failed: ${data.error}`);
+      }
+    } catch (error) {
+      setStandaloneUpdateMsg('❌ Error updating expiry');
+    } finally {
+      setUpdatingExpiry(false);
+    }
+  };
+
+const fetchData = async (adminSecret, { silent = false } = {}) => {
     setLoading(true);
     try {
       const headers = { 'x-admin-secret': adminSecret };
@@ -234,8 +907,12 @@ const fetchData = async (adminSecret) => {
         fetch(`${API_BASE}/reminders`, { headers }),
         fetch(`${B2B_BASE}/list`, { headers })
       ]);
-      if (statsRes.status === 401 || businessRes.status === 401) {
-        alert('Wrong password!');
+      if ([statsRes, usersRes, remindersRes, businessRes].some((r) => r.status === 401)) {
+        if (authenticated) {
+          handle401();
+        } else {
+          toast.error('Wrong password');
+        }
         setLoading(false);
         return false;
       }
@@ -247,10 +924,14 @@ const fetchData = async (adminSecret) => {
       setReminders(remindersData.reminders || []);
       setBusinesses(businessData.businesses || []);
       setAuthenticated(true);
+      sessionStorage.setItem(SECRET_STORAGE_KEY, adminSecret);
+      setLastUpdated(new Date());
       setLoading(false);
+      if (!silent) toast.success('Data refreshed');
       return true;
     } catch (error) {
       console.error('Failed to fetch:', error);
+      toast.error('Network error — could not reach the server');
       setLoading(false);
       return false;
     }
@@ -258,8 +939,44 @@ const fetchData = async (adminSecret) => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    await fetchData(secret);
+    await fetchData(secret, { silent: true });
   };
+
+  /* Auto-login: secret survives refresh in sessionStorage (dies with the tab) */
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    const stored = sessionStorage.getItem(SECRET_STORAGE_KEY);
+    if (stored) fetchData(stored, { silent: true });
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  /* Keyboard: Ctrl/Cmd+K palette · '/' focuses user search · Esc closes palette */
+  useEffect(() => {
+    if (!authenticated) return undefined;
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      } else if (e.key === 'Escape') {
+        setPaletteOpen(false);
+        setSelectedUser(null);
+        setQrModal((q) => (q.show ? { show: false, businessName: '', qrCode: '', joinUrl: '' } : q));
+        setBulkDialog((b) => (b.open ? { open: false, businessId: '', businessName: '' } : b));
+        setDeactivateDialog((d) => (d.open ? { open: false, businessId: '', businessName: '' } : d));
+        setBroadcastConfirmOpen(false);
+      } else if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) &&
+        !e.target.isContentEditable
+      ) {
+        e.preventDefault();
+        switchTab('users');
+        setTimeout(() => searchInputRef.current && searchInputRef.current.focus(), 80);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [authenticated, switchTab]);
 
   const handleCsvImport = async () => {
     if (!csvBusinessId || !csvData.trim()) return;
@@ -277,14 +994,14 @@ const fetchData = async (adminSecret) => {
           csvData: csvData.trim()
         })
       });
+      if (res.status === 401) { handle401(); return; }
       const data = await res.json();
       setCsvResults(data);
       if (data.success && data.results.success > 0) {
-        // Refresh members list if viewing this business
-        alert(`✅ Import complete! ${data.results.success} members added successfully.`);
+        toast.success(`Import complete! ${data.results.success} members added successfully.`);
       }
     } catch (err) {
-      alert('❌ Import failed. Check console for details.');
+      toast.error('Import failed. Check console for details.');
       console.error('CSV import error:', err);
     } finally {
       setCsvImporting(false);
@@ -292,6 +1009,7 @@ const fetchData = async (adminSecret) => {
   };
 
   const handleActivatePro = async () => {
+    setActivating(true);
     try {
       const res = await fetch(`${API_BASE}/activate-pro`, {
         method: 'POST',
@@ -304,6 +1022,7 @@ const fetchData = async (adminSecret) => {
           mode: activatePaidRecovery ? 'payment_recovery' : 'gift'
         })
       });
+      if (res.status === 401) { handle401(); return; }
       const data = await res.json();
       if (data.success) {
         setActivateMsg(
@@ -311,207 +1030,487 @@ const fetchData = async (adminSecret) => {
             ? `✅ Pro activated (paid recovery — counts in ₹ revenue) for ${activatePhone}`
             : `✅ Pro activated (free admin gift — not in ₹ revenue) for ${activatePhone}`
         );
-        fetchData(secret);
+        fetchData(secret, { silent: true });
       } else {
         setActivateMsg(`❌ Failed: ${data.error}`);
       }
     } catch (error) {
       setActivateMsg('❌ Error activating pro');
+    } finally {
+      setActivating(false);
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-IN', {
-      day: 'numeric', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+  const filteredUsers = useMemo(
+    () =>
+      users.filter(u => {
+        const matchesPlan = userFilter === 'all' ? true : userFilter === 'pro' ? u.plan === 'PRO' : u.plan !== 'PRO';
+        const matchesSearch = searchPhone.trim() === '' ? true : u.whatsapp_phone_number.includes(searchPhone.trim());
+        return matchesPlan && matchesSearch;
+      }),
+    [users, userFilter, searchPhone]
+  );
+
+  /* Sorting */
+  const [userSort, setUserSort] = useState({ key: null, dir: 'asc' });
+  const [reminderSort, setReminderSort] = useState({ key: null, dir: 'asc' });
+
+  const toggleUserSort = useCallback((key) => {
+    setUserSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  }, []);
+  const toggleReminderSort = useCallback((key) => {
+    setReminderSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' }));
+  }, []);
+
+  const sortRows = (rows, { key, dir }, accessors) => {
+    if (!key) return rows;
+    const acc = accessors[key];
+    const mul = dir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const av = acc(a);
+      const bv = acc(b);
+      if (av < bv) return -1 * mul;
+      if (av > bv) return 1 * mul;
+      return 0;
     });
   };
 
-  const formatIST = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleString('en-IN', {
-      day: 'numeric', month: 'short',
-      hour: '2-digit', minute: '2-digit', hour12: true,
-      timeZone: 'Asia/Kolkata'
-    });
-  };
+  const sortedUsers = useMemo(
+    () =>
+      sortRows(filteredUsers, userSort, {
+        phone: (u) => u.whatsapp_phone_number || '',
+        name: (u) => (u.name || '').toLowerCase(),
+        plan: (u) => u.plan || '',
+        reminders: (u) => u.sentReminders || 0,
+        created_at: (u) => new Date(u.created_at || 0).getTime(),
+      }),
+    [filteredUsers, userSort]
+  );
 
-  const filteredUsers = users.filter(u => {
-    const matchesPlan = userFilter === 'all' ? true : userFilter === 'pro' ? u.plan === 'PRO' : u.plan !== 'PRO';
-    const matchesSearch = searchPhone.trim() === '' ? true : u.whatsapp_phone_number.includes(searchPhone.trim());
-    return matchesPlan && matchesSearch;
-  });
+  const sortedReminders = useMemo(
+    () =>
+      sortRows(reminders, reminderSort, {
+        title: (r) => (r.title || '').toLowerCase(),
+        status: (r) => r.status || '',
+        next_send_at: (r) => new Date(r.next_send_at || 0).getTime(),
+      }),
+    [reminders, reminderSort]
+  );
+
+  /* Windowed rendering: only ROW_PAGE rows mount at once — keeps section
+     switches instant even with hundreds of users/reminders */
+  const [userRowLimit, setUserRowLimit] = useState(ROW_PAGE);
+  const [reminderRowLimit, setReminderRowLimit] = useState(ROW_PAGE);
+
+  useEffect(() => {
+    setUserRowLimit(ROW_PAGE);
+  }, [userFilter, searchPhone]);
+
+  const visibleUsers = useMemo(() => sortedUsers.slice(0, userRowLimit), [sortedUsers, userRowLimit]);
+  const visibleReminders = useMemo(() => sortedReminders.slice(0, reminderRowLimit), [sortedReminders, reminderRowLimit]);
+
+  /* Live broadcast audience size from existing /stats aggregates (no new fetch).
+     null until stats load — UI then labels the count as "unavailable". */
+  const broadcastMeta = BROADCAST_FILTERS.find((f) => f.value === broadcastFilter) || BROADCAST_FILTERS[0];
+  const broadcastTargetCount = stats?.users ? (stats.users[broadcastMeta.statsKey] ?? null) : null;
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FAF9F5' }}>
-        <div className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}>
+      <div className="relative min-h-screen flex items-center justify-center bg-[#0B0E0C] overflow-hidden">
+        <Toaster theme="dark" position="bottom-right" richColors />
+        {/* Ambient green bloom + grain */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 35%, rgba(37, 211, 102, 0.08), transparent 70%)' }}
+        />
+        <div aria-hidden="true" className="aurora-grain" style={{ opacity: 0.04 }} />
+
+        <motion.div
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+          className="relative w-full max-w-sm mx-4 rounded-3xl bg-white/[0.04] backdrop-blur-md border border-white/[0.08] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_64px_rgba(0,0,0,0.5)]"
+        >
+          <div className="flex items-center gap-3 mb-7">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-gradient-to-br from-rm-primary to-rm-green shadow-[0_0_24px_rgba(37,211,102,0.35),inset_0_1px_0_rgba(255,255,255,0.25)]">
               <Lock className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-lg" style={{ color: '#006D2F' }}>RemindMe India</h1>
-              <p className="text-xs text-gray-500">Admin Dashboard</p>
+              <h1 className="font-heading font-extrabold text-lg text-white">RemindMe India</h1>
+              <p className="text-xs text-white/40">Mission Control</p>
             </div>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <input
               type="password"
-              placeholder="Admin password"
+              placeholder="Admin secret"
               value={secret}
               onChange={(e) => setSecret(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+              autoFocus
+              className="w-full bg-white/[0.05] border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/30 outline-none focus:border-rm-green/60 focus:ring-2 focus:ring-rm-green/20 transition-colors duration-200"
             />
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-xl text-white font-bold transition-all"
-              style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              disabled={loading || !secret}
+              className="w-full py-3 rounded-xl text-white font-heading font-bold bg-gradient-to-br from-rm-primary to-rm-green shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_4px_16px_rgba(0,109,47,0.4)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_8px_24px_rgba(37,211,102,0.4)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0 transition-all duration-200 ease-out"
             >
-              {loading ? 'Loading...' : 'Login →'}
+              {loading ? (
+                <span className="inline-flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Authenticating…
+                </span>
+              ) : (
+                'Enter Mission Control →'
+              )}
             </button>
           </form>
-        </div>
+          <p className="mt-5 text-[11px] text-white/25 text-center">
+            Secret is kept in this tab only and cleared when it closes.
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FAF9F5' }}>
+    <div className="min-h-screen bg-[#0B0E0C] text-white flex">
+      <Toaster theme="dark" position="bottom-right" richColors />
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Bell className="w-6 h-6" style={{ color: '#006D2F' }} />
-          <span className="font-bold text-lg" style={{ color: '#006D2F' }}>RemindMe India Admin</span>
+      {/* Grain texture over the whole cockpit */}
+      <div aria-hidden="true" className="fixed inset-0 aurora-grain pointer-events-none z-0" style={{ opacity: 0.03 }} />
+
+      {/* ── Sidebar ── */}
+      <motion.aside
+        animate={{ width: sidebarCollapsed ? 76 : 232 }}
+        transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 300, damping: 30 }}
+        className="relative z-30 shrink-0 min-h-screen border-r border-white/[0.07] bg-[#0E120F] flex flex-col"
+        style={{ width: sidebarCollapsed ? 76 : 232 }}
+      >
+        <div className="flex items-center gap-2.5 px-4 h-16 border-b border-white/[0.06]">
+          <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-rm-primary to-rm-green flex items-center justify-center shadow-[0_0_16px_rgba(37,211,102,0.3)]">
+            <Bell className="w-4 h-4 text-white" />
+          </div>
+          {!sidebarCollapsed && (
+            <div className="min-w-0">
+              <p className="font-heading font-extrabold text-sm text-white leading-tight truncate">RemindMe India</p>
+              <p className="text-[10px] text-rm-green/80 font-semibold tracking-[0.12em] uppercase">Mission Control</p>
+            </div>
+          )}
         </div>
-        <button
-          onClick={() => { fetchData(secret); if (activeTab === 'inbox') fetchInbox(); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50"
+
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => switchTab(item.id)}
+                title={sidebarCollapsed ? item.label : undefined}
+                className={`relative w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200 ${
+                  active ? 'text-rm-green' : 'text-white/50 hover:text-white/90'
+                }`}
+              >
+                {active && (
+                  <motion.div
+                    layoutId="admin-nav-glow"
+                    transition={reducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 32 }}
+                    className="absolute inset-0 rounded-xl bg-rm-green/[0.09] border border-rm-green/25 shadow-[inset_0_1px_0_rgba(37,211,102,0.15),0_0_20px_rgba(37,211,102,0.12)]"
+                  />
+                )}
+                <Icon className="relative w-[18px] h-[18px] shrink-0" />
+                {!sidebarCollapsed && <span className="relative truncate">{item.label}</span>}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="px-3 pb-4">
+          <button
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-white/40 hover:text-white/80 hover:bg-white/[0.04] text-sm transition-colors duration-200"
+          >
+            <ChevronsLeft className={`w-4 h-4 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+            {!sidebarCollapsed && <span>Collapse</span>}
+          </button>
+        </div>
+      </motion.aside>
+
+      {/* ── Main column ── */}
+      <div className="flex-1 min-w-0 flex flex-col relative z-10">
+        {/* Sticky glass header */}
+        <header className="sticky top-0 z-40 h-16 px-6 flex items-center justify-between border-b border-white/[0.07] bg-[#0B0E0C]/80 backdrop-blur-xl">
+          <div className="flex items-center gap-3">
+            <h1 className="font-heading font-extrabold text-lg text-white">
+              {(NAV_ITEMS.find((n) => n.id === activeTab) || {}).label || 'Dashboard'}
+            </h1>
+            {lastUpdated && (
+              <span className="hidden sm:inline text-[11px] text-white/30">
+                Updated {lastUpdated.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPaletteOpen(true)}
+              className="hidden md:flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white/40 border border-white/10 hover:border-white/20 hover:text-white/70 transition-colors duration-200"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>Search…</span>
+              <kbd className="px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-[10px] font-mono">Ctrl K</kbd>
+            </button>
+            <button
+              onClick={() => { fetchData(secret); if (activeTab === 'inbox') fetchInbox(); }}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/70 border border-white/10 hover:border-rm-green/40 hover:text-rm-green disabled:opacity-50 transition-colors duration-200"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white/50 border border-white/10 hover:border-red-400/40 hover:text-red-400 transition-colors duration-200"
+              aria-label="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8">
+        {/* Enter-only transition: no exit phase, so a sidebar click swaps content
+            immediately and the new section fades in — never blocks on unmount */}
+        <motion.div
+          key={activeTab}
+          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
         >
-          <RefreshCw className="w-4 h-4" /> Refresh
-        </button>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Total Users</p>
-              <p className="text-3xl font-bold" style={{ color: '#006D2F' }}>{stats.users.total}</p>
-              <p className="text-xs text-gray-400 mt-1">+{stats.users.newToday} today</p>
+        {/* ═══ OVERVIEW TAB ═══ */}
+        {activeTab === 'overview' && loading && !stats && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[0, 1, 2, 3].map((i) => (
+                <AdminSkeleton key={i} className="h-28 rounded-2xl" />
+              ))}
             </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Pro Users</p>
-              <p className="text-3xl font-bold" style={{ color: '#25D366' }}>{stats.users.pro}</p>
-              <p className="text-xs text-gray-400 mt-1">💳 {stats.users.paidPro || 0} paid · 🎁 {stats.users.referralPro || 0} referral</p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Reminders Sent</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.reminders.sent}</p>
-              <p className="text-xs text-gray-400 mt-1">{stats.reminders.pending} pending</p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <p className="text-sm text-gray-500 mb-1">Monthly Revenue</p>
-              <p className="text-3xl font-bold text-purple-600">₹{stats.revenue.monthly}</p>
-              <p className="text-xs text-gray-400 mt-1">{stats.users.newThisWeek} new this week</p>
+            <div className="grid lg:grid-cols-3 gap-6">
+              <AdminSkeleton className="h-64 rounded-2xl lg:col-span-2" />
+              <AdminSkeleton className="h-64 rounded-2xl" />
             </div>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap">
-          {['overview', 'users', 'reminders', 'activate', 'business', 'broadcast', 'inbox'].map(tab => (
+        {activeTab === 'overview' && !loading && !stats && (
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-10 text-center">
+            <AlertTriangle className="w-7 h-7 text-[#FF9933] mx-auto mb-3" />
+            <p className="text-white/70 font-medium mb-1">Stats load nahi hue</p>
+            <p className="text-sm text-white/35 mb-5">Server tak request nahi pahunchi ya response invalid tha.</p>
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all ${
-                activeTab === tab ? 'text-white shadow-sm' : 'bg-white text-gray-600 border border-gray-200'
-              }`}
-              style={activeTab === tab ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
+              onClick={() => fetchData(secret)}
+              className="px-5 py-2.5 rounded-xl text-sm font-bold text-rm-green border border-rm-green/30 hover:bg-rm-green/10 transition-colors duration-200"
             >
-              {tab === 'activate' ? '⚡ Activate Pro' : tab === 'broadcast' ? '📢 Broadcast' : tab === 'inbox' ? '📨 Inbox' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+              Retry
             </button>
-          ))}
-        </div>
+          </div>
+        )}
 
-        {/* ═══ OVERVIEW TAB ═══ */}
         {activeTab === 'overview' && stats && (
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-4">👥 User Breakdown</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center"><span className="text-gray-600">Total Users</span><span className="font-bold">{stats.users.total}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">Pro Users 🌟</span><span className="font-bold text-green-600">{stats.users.pro}</span></div>
-                <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">💳 Paid Pro</span><span className="font-bold text-green-700">{stats.users.paidPro || 0}</span></div>
-                <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">🎁 Referral Pro</span><span className="font-bold text-orange-500">{stats.users.referralPro || 0}</span></div>
-                {(stats.users.adminPro || 0) > 0 && (
-                  <div className="flex justify-between items-center pl-4"><span className="text-gray-400 text-sm">🔧 Admin Pro</span><span className="font-bold text-gray-500">{stats.users.adminPro}</span></div>
-                )}
-                <div className="flex justify-between items-center"><span className="text-gray-600">Free Users</span><span className="font-bold">{stats.users.free}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">New Today</span><span className="font-bold text-blue-600">{stats.users.newToday}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">New This Week</span><span className="font-bold text-purple-600">{stats.users.newThisWeek}</span></div>
-              </div>
+          <div className="space-y-6">
+            {/*
+              BACKEND TODO — real trend charts need time-series the /api/admin/stats
+              endpoint doesn't expose yet. To upgrade the aggregates below into
+              line/area trends, expose:
+                - signupsPerDay:   [{ date, count }]            (last 30 days)
+                - remindersPerDay: [{ date, created, sent }]    (last 30 days)
+                - revenuePerMonth: [{ month, amount }]          (last 12 months)
+              Until then, everything rendered here uses ONLY existing aggregates.
+            */}
+
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <AdminStatCard
+                label="Total Users"
+                value={stats.users.total}
+                accent="#FFFFFF"
+                delay={0}
+                sub={<span className="text-rm-green">+{stats.users.newToday} today · +{stats.users.newThisWeek} this week</span>}
+              />
+              <AdminStatCard
+                label="Pro Users"
+                value={stats.users.pro}
+                accent="#25D366"
+                delay={0.08}
+                sub={<span>💳 {stats.users.paidPro || 0} paid · 🎁 {stats.users.referralPro || 0} referral{(stats.users.adminPro || 0) > 0 ? ` · 🔧 ${stats.users.adminPro} admin` : ''}</span>}
+              />
+              <AdminStatCard
+                label="Reminders Sent"
+                value={stats.reminders.sent}
+                accent="#7CC5FF"
+                delay={0.16}
+                sub={<span>{stats.reminders.pending} pending · {stats.reminders.createdToday} created today</span>}
+              />
+              <AdminStatCard
+                label="Monthly Revenue"
+                value={stats.revenue.monthly}
+                prefix="₹"
+                accent="#FF9933"
+                delay={0.24}
+                sub={<span>{stats.revenue.paidSubscribers ?? stats.users.paidPro ?? 0} paid × ₹99</span>}
+              />
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 mb-4">🔔 Reminder Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center"><span className="text-gray-600">Total Created</span><span className="font-bold">{stats.reminders.total}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">Successfully Sent ✅</span><span className="font-bold text-green-600">{stats.reminders.sent}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">Pending ⏳</span><span className="font-bold text-blue-600">{stats.reminders.pending}</span></div>
-                <div className="flex justify-between items-center"><span className="text-gray-600">Created Today</span><span className="font-bold text-orange-600">{stats.reminders.createdToday}</span></div>
-              </div>
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Revenue centerpiece */}
+              <AdminPanel
+                title="💰 Revenue"
+                sub="Paid subscriptions only — gifts and referrals excluded from ₹"
+                className="lg:col-span-2"
+              >
+                <div className="flex flex-wrap items-end gap-x-10 gap-y-5 mb-6">
+                  <RevenueFigure monthly={stats.revenue.monthly} />
+                  <div>
+                    <p className="text-[11px] text-white/35 mb-1">Annual run rate</p>
+                    <p className="font-heading font-extrabold text-2xl text-white/85 tabular-nums">₹{(stats.revenue.monthly * 12).toLocaleString('en-IN')}</p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-white/35 mb-1">Paid conversion</p>
+                    <p className="font-heading font-extrabold text-2xl text-[#7CC5FF] tabular-nums">
+                      {stats.users.total > 0 ? Math.round(((stats.users.paidPro || 0) / stats.users.total) * 100) : 0}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-white/35 mb-1">Total Pro %</p>
+                    <p className="font-heading font-extrabold text-2xl text-[#FF9933] tabular-nums">
+                      {stats.users.total > 0 ? Math.round((stats.users.pro / stats.users.total) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+                <SegmentedBar
+                  segments={[
+                    { label: '💳 Paid', value: stats.revenue.paidSubscribers ?? stats.users.paidPro ?? 0, color: '#25D366' },
+                    { label: '🎁 Referral (not in ₹)', value: stats.revenue.referralGranted ?? stats.users.referralPro ?? 0, color: '#FF9933' },
+                    { label: '🔧 Admin gift (not in ₹)', value: stats.revenue.adminGranted ?? stats.users.adminPro ?? 0, color: '#5B6660' },
+                  ]}
+                />
+              </AdminPanel>
+
+              {/* User composition donut */}
+              <AdminPanel title="👥 User Composition" sub={`${stats.users.total.toLocaleString('en-IN')} total users`}>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Free', value: stats.users.free || 0 },
+                          { name: 'Paid Pro', value: stats.users.paidPro || 0 },
+                          { name: 'Referral Pro', value: stats.users.referralPro || 0 },
+                          { name: 'Admin Pro', value: stats.users.adminPro || 0 },
+                        ].filter((d) => d.value > 0)}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius="62%"
+                        outerRadius="92%"
+                        paddingAngle={3}
+                        stroke="none"
+                        isAnimationActive={!reducedMotion}
+                      >
+                        <Cell fill="#3D453F" />
+                        <Cell fill="#25D366" />
+                        <Cell fill="#FF9933" />
+                        <Cell fill="#7CC5FF" />
+                      </Pie>
+                      <RechartsTooltip contentStyle={CHART_TOOLTIP_STYLE} itemStyle={{ color: '#fff' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2">
+                  {[
+                    { label: 'Free', value: stats.users.free || 0, color: '#3D453F' },
+                    { label: 'Paid', value: stats.users.paidPro || 0, color: '#25D366' },
+                    { label: 'Referral', value: stats.users.referralPro || 0, color: '#FF9933' },
+                    { label: 'Admin', value: stats.users.adminPro || 0, color: '#7CC5FF' },
+                  ].map((d) => (
+                    <span key={d.label} className="inline-flex items-center gap-1.5 text-[11px] text-white/50">
+                      <span className="w-2 h-2 rounded-full" style={{ background: d.color }} />
+                      {d.label}: <span className="text-white/80 font-semibold tabular-nums">{d.value}</span>
+                    </span>
+                  ))}
+                </div>
+              </AdminPanel>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm md:col-span-2">
-              <h3 className="font-bold text-gray-800 mb-4">💰 Revenue</h3>
-              <div className="flex flex-wrap items-center gap-8">
-                <div>
-                  <p className="text-gray-500 text-sm">Monthly Revenue (paid only)</p>
-                  <p className="text-4xl font-bold text-green-600">₹{stats.revenue.monthly}</p>
-                  <p className="text-xs text-gray-400 mt-1">{stats.revenue.paidSubscribers ?? stats.users.paidPro ?? 0} paid × ₹99</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    🔧 Admin gifts: {stats.revenue.adminGranted ?? stats.users.adminPro ?? 0} (not in ₹)
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    🎁 Referral Pro: {stats.revenue.referralGranted ?? stats.users.referralPro ?? 0} (not in ₹)
-                  </p>
+            <div className="grid lg:grid-cols-3 gap-6">
+              {/* Reminder pipeline bars */}
+              <AdminPanel title="🔔 Reminder Pipeline" sub="Aggregates from /stats" className="lg:col-span-2">
+                <div className="h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      layout="vertical"
+                      data={[
+                        { name: 'Created', value: stats.reminders.total, fill: '#3D453F' },
+                        { name: 'Sent', value: stats.reminders.sent, fill: '#25D366' },
+                        { name: 'Pending', value: stats.reminders.pending, fill: '#7CC5FF' },
+                        { name: 'Today', value: stats.reminders.createdToday, fill: '#FF9933' },
+                      ]}
+                      margin={{ left: 8, right: 24, top: 4, bottom: 4 }}
+                    >
+                      <XAxis type="number" hide />
+                      <YAxis
+                        type="category"
+                        dataKey="name"
+                        width={64}
+                        tick={{ fill: 'rgba(255,255,255,0.45)', fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <RechartsTooltip contentStyle={CHART_TOOLTIP_STYLE} itemStyle={{ color: '#fff' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                      <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={18} isAnimationActive={!reducedMotion} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Annual Run Rate</p>
-                  <p className="text-4xl font-bold text-purple-600">₹{stats.revenue.monthly * 12}</p>
+              </AdminPanel>
+
+              {/* Growth pulse */}
+              <AdminPanel title="📈 Growth Pulse" sub="New signups">
+                <div className="flex items-end justify-around h-44 pb-2">
+                  {[
+                    { label: 'Today', value: stats.users.newToday, color: '#25D366' },
+                    { label: 'This week', value: stats.users.newThisWeek, color: '#FF9933' },
+                  ].map((g) => {
+                    const max = Math.max(stats.users.newToday, stats.users.newThisWeek, 1);
+                    return (
+                      <div key={g.label} className="flex flex-col items-center gap-2 w-20">
+                        <span className="font-heading font-extrabold text-xl text-white/90 tabular-nums">{g.value}</span>
+                        <motion.div
+                          className="w-full rounded-t-lg"
+                          style={{ background: `linear-gradient(180deg, ${g.color}, ${g.color}55)`, transformOrigin: 'bottom center' }}
+                          initial={reducedMotion ? { scaleY: 1 } : { scaleY: 0 }}
+                          animate={{ scaleY: 1 }}
+                          transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1], delay: 0.2 }}
+                        >
+                          <div style={{ height: `${Math.max((g.value / max) * 110, 8)}px` }} />
+                        </motion.div>
+                        <span className="text-[11px] text-white/40">{g.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Paid Conversion</p>
-                  <p className="text-4xl font-bold text-blue-600">
-                    {stats.users.total > 0 ? Math.round(((stats.users.paidPro || 0) / stats.users.total) * 100) : 0}%
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">paid only (excl. referral)</p>
-                </div>
-                <div>
-                  <p className="text-gray-500 text-sm">Total Pro %</p>
-                  <p className="text-4xl font-bold text-orange-500">
-                    {stats.users.total > 0 ? Math.round((stats.users.pro / stats.users.total) * 100) : 0}%
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">paid + referral</p>
-                </div>
-              </div>
+              </AdminPanel>
             </div>
           </div>
         )}
 
         {/* ═══ USERS TAB ═══ */}
         {activeTab === 'users' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
             {/* Filter + Search Header */}
-            <div className="p-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
-              <h2 className="font-bold text-gray-800 mr-2">Users ({filteredUsers.length})</h2>
-              <div className="flex gap-2">
+            <div className="p-4 border-b border-white/[0.07] flex flex-wrap items-center gap-3">
+              <h2 className="font-heading font-bold text-white/90 mr-1">
+                Users <span className="text-rm-green tabular-nums">({filteredUsers.length})</span>
+              </h2>
+              <div className="flex gap-1.5">
                 {[
                   { key: 'all', label: 'All' },
                   { key: 'pro', label: '🌟 Pro Only' },
@@ -520,155 +1519,160 @@ const fetchData = async (adminSecret) => {
                   <button
                     key={f.key}
                     onClick={() => setUserFilter(f.key)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                      userFilter === f.key ? 'text-white' : 'bg-gray-100 text-gray-600'
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors duration-150 ${
+                      userFilter === f.key
+                        ? 'bg-rm-green/[0.14] text-rm-green shadow-[inset_0_0_0_1px_rgba(37,211,102,0.35)]'
+                        : 'bg-white/[0.04] text-white/45 hover:text-white/75 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.07)]'
                     }`}
-                    style={userFilter === f.key ? { background: 'linear-gradient(135deg, #006D2F, #25D366)' } : {}}
                   >
                     {f.label}
                   </button>
                 ))}
               </div>
-              <input
-                type="text"
-                placeholder="🔍 Search phone number..."
-                value={searchPhone}
-                onChange={(e) => setSearchPhone(e.target.value)}
-                className="ml-auto border border-gray-200 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-green-500 w-56"
-              />
+              <div className="ml-auto relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/25 pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search phone…  ( / )"
+                  value={searchPhone}
+                  onChange={(e) => setSearchPhone(e.target.value)}
+                  className="w-60 bg-white/[0.04] border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-white placeholder:text-white/25 outline-none focus:border-rm-green/50 focus:ring-2 focus:ring-rm-green/15 transition-colors duration-200"
+                />
+              </div>
             </div>
 
             {/* Users Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[62vh]">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead>
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Phone</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Name</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Plan</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Reminders</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Joined</th>
+                    <SortableTh label="Phone" sortKey="phone" sort={userSort} onSort={toggleUserSort} />
+                    <SortableTh label="Name" sortKey="name" sort={userSort} onSort={toggleUserSort} />
+                    <SortableTh label="Plan" sortKey="plan" sort={userSort} onSort={toggleUserSort} />
+                    <SortableTh label="Reminders" sortKey="reminders" sort={userSort} onSort={toggleUserSort} />
+                    <SortableTh label="Joined" sortKey="created_at" sort={userSort} onSort={toggleUserSort} />
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((user, i) => (
-                    <tr
-                      key={user.id}
-                      className={`cursor-pointer hover:bg-green-50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                      onClick={() => setSelectedUser(user)}
-                    >
-                      <td className="px-4 py-3 text-sm font-mono">{user.whatsapp_phone_number}</td>
-                      <td className="px-4 py-3 text-sm">{user.name || 'Unknown'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          user.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {user.plan}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className="text-green-600">{user.sentReminders} sent</span>
-                        {' · '}
-                        <span className="text-blue-600">{user.pendingReminders} pending</span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(user.created_at)}</td>
-                    </tr>
+                  {visibleUsers.map((user, i) => (
+                    <UserRow key={user.id} user={user} index={i} onSelect={setSelectedUser} reduce={reducedMotion} />
                   ))}
                   {filteredUsers.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400 text-sm">
-                        No users found matching your filter.
+                      <td colSpan={5} className="px-4 py-14 text-center">
+                        <p className="text-3xl mb-2">🔍</p>
+                        <p className="text-white/60 text-sm font-medium">Koi user nahi mila</p>
+                        <p className="text-white/30 text-xs mt-1">Filter dheela karo ya number dobara check karo.</p>
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+            {sortedUsers.length > userRowLimit && (
+              <div className="p-4 border-t border-white/[0.07] text-center">
+                <button
+                  onClick={() => setUserRowLimit((l) => l + 100)}
+                  className="px-5 py-2 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:border-rm-green/40 hover:text-rm-green transition-colors duration-200"
+                >
+                  Show more ({sortedUsers.length - userRowLimit} remaining)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* ═══ REMINDERS TAB ═══ */}
         {activeTab === 'reminders' && (
-          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h2 className="font-bold text-gray-800">Recent Reminders ({reminders.length})</h2>
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+            <div className="p-4 border-b border-white/[0.07]">
+              <h2 className="font-heading font-bold text-white/90">
+                Recent Reminders <span className="text-rm-green tabular-nums">({reminders.length})</span>
+              </h2>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[65vh]">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead>
                   <tr>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Title</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">User</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Type</th>
-                    <th className="text-left px-4 py-3 text-xs text-gray-500 font-medium">Next Send</th>
+                    <SortableTh label="Title" sortKey="title" sort={reminderSort} onSort={toggleReminderSort} />
+                    <th className={TH_CLASS}>User</th>
+                    <SortableTh label="Status" sortKey="status" sort={reminderSort} onSort={toggleReminderSort} />
+                    <th className={TH_CLASS}>Type</th>
+                    <SortableTh label="Next Send" sortKey="next_send_at" sort={reminderSort} onSort={toggleReminderSort} />
                   </tr>
                 </thead>
                 <tbody>
-                  {reminders.map((reminder, i) => (
-                    <tr key={reminder.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm font-medium">{reminder.title}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{reminder.user?.whatsapp_phone_number}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          reminder.status === 'SENT' ? 'bg-green-100 text-green-700' :
-                          reminder.status === 'PENDING' ? 'bg-blue-100 text-blue-700' :
-                          reminder.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {reminder.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">{reminder.is_recurring ? `🔁 ${reminder.frequency}` : '1x'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatIST(reminder.next_send_at)}</td>
-                    </tr>
+                  {visibleReminders.map((reminder, i) => (
+                    <ReminderRow key={reminder.id} reminder={reminder} index={i} reduce={reducedMotion} />
                   ))}
+                  {reminders.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-14 text-center">
+                        <p className="text-3xl mb-2">🧘</p>
+                        <p className="text-white/60 text-sm font-medium">Sab shaant hai</p>
+                        <p className="text-white/30 text-xs mt-1">Abhi koi reminder nahi — jab aayega, yahan dikhega.</p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            {reminders.length > reminderRowLimit && (
+              <div className="p-4 border-t border-white/[0.07] text-center">
+                <button
+                  onClick={() => setReminderRowLimit((l) => l + 100)}
+                  className="px-5 py-2 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:border-rm-green/40 hover:text-rm-green transition-colors duration-200"
+                >
+                  Show more ({reminders.length - reminderRowLimit} remaining)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
         {/* ═══ ACTIVATE PRO TAB ═══ */}
         {activeTab === 'activate' && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm max-w-md">
-            <h2 className="font-bold text-gray-800 mb-4">⚡ Activate Pro Plan</h2>
-            <p className="text-sm text-gray-500 mb-4">Enter user WhatsApp number. Choose why you are activating:</p>
+          <AdminPanel title="⚡ Activate Pro Plan" sub="Enter user WhatsApp number. Choose why you are activating:" className="max-w-md">
             <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="917470578178"
-                value={activatePhone}
-                onChange={(e) => setActivatePhone(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-              />
-              <label className="flex items-start gap-3 p-3 rounded-xl border border-green-200 bg-green-50 cursor-pointer">
+              <div>
+                <label className={LABEL_CLASS}>WhatsApp number</label>
+                <input
+                  type="text"
+                  placeholder="917470578178"
+                  value={activatePhone}
+                  onChange={(e) => setActivatePhone(e.target.value)}
+                  className={`${INPUT_CLASS} font-mono`}
+                />
+              </div>
+              <label className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-colors duration-200 ${
+                activatePaidRecovery
+                  ? 'border-rm-green/35 bg-rm-green/[0.07]'
+                  : 'border-white/10 bg-white/[0.03]'
+              }`}>
                 <input
                   type="checkbox"
                   checked={activatePaidRecovery}
                   onChange={(e) => setActivatePaidRecovery(e.target.checked)}
-                  className="mt-1"
+                  className="mt-1 accent-[#25D366]"
                 />
-                <span className="text-sm text-gray-700">
-                  <strong>User already paid</strong> (Razorpay / website — webhook failed). Counts in ₹ revenue.
+                <span className="text-sm text-white/65 leading-relaxed">
+                  <strong className="text-white/90">User already paid</strong> (Razorpay / website — webhook failed). Counts in ₹ revenue.
                   <br />
-                  <span className="text-gray-500">Uncheck for a free admin gift (Admin Pro, not in revenue).</span>
+                  <span className="text-white/40">Uncheck for a free admin gift (Admin Pro, not in revenue).</span>
                 </span>
               </label>
-              <button
-                onClick={handleActivatePro}
-                className="w-full py-3 rounded-xl text-white font-bold"
-                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
-              >
-                Activate Pro →
+              <button onClick={handleActivatePro} disabled={activating || !activatePhone} className={BTN_PRIMARY}>
+                {activating && <BtnSpinner />}
+                {activating ? 'Activating…' : 'Activate Pro →'}
               </button>
               {activateMsg && (
-                <p className={`text-sm font-medium ${activateMsg.includes('✅') ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-sm font-medium ${activateMsg.includes('✅') ? 'text-rm-green' : 'text-red-400'}`}>
                   {activateMsg}
                 </p>
               )}
             </div>
-          </div>
+          </AdminPanel>
         )}
 
         {/* Business Tab */}
@@ -676,137 +1680,110 @@ const fetchData = async (adminSecret) => {
           <div className="space-y-6">
 
             {/* Create Business Form */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-gray-800 mb-4">Create New Business</h2>
+            <AdminPanel title="🏢 Create New Business" sub="Welcome WhatsApp goes to the owner automatically" testId="panel-create-business">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                  <label className={LABEL_CLASS}>Business Name</label>
                   <input
                     type="text"
                     value={businessForm.businessName}
                     onChange={(e) => setBusinessForm({...businessForm, businessName: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={INPUT_CLASS}
                     placeholder="Fitness First Gym"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Owner WhatsApp</label>
+                  <label className={LABEL_CLASS}>Owner WhatsApp</label>
                   <input
                     type="text"
                     value={businessForm.ownerWhatsapp}
                     onChange={(e) => setBusinessForm({...businessForm, ownerWhatsapp: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={`${INPUT_CLASS} font-mono`}
                     placeholder="917470578178"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry Type</label>
-                  <select
+                  <label className={LABEL_CLASS}>Industry Type</label>
+                  <DarkSelect
                     value={businessForm.industryType}
-                    onChange={(e) => setBusinessForm({...businessForm, industryType: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-                  >
-                    <option value="gym">Gym</option>
-                    <option value="clinic">Clinic</option>
-                    <option value="coaching">Coaching</option>
-                    <option value="salon">Salon</option>
-                    <option value="other">Other</option>
-                  </select>
+                    onChange={(v) => setBusinessForm({...businessForm, industryType: v})}
+                    ariaLabel="Industry Type"
+                    options={[
+                      { value: 'gym', label: 'Gym' },
+                      { value: 'clinic', label: 'Clinic' },
+                      { value: 'coaching', label: 'Coaching' },
+                      { value: 'salon', label: 'Salon' },
+                      { value: 'other', label: 'Other' },
+                    ]}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
-                  <select
+                  <label className={LABEL_CLASS}>Plan</label>
+                  <DarkSelect
                     value={businessForm.plan}
-                    onChange={(e) => setBusinessForm({...businessForm, plan: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-                  >
-                    <option value="small">Small - 999/month (100 customers)</option>
-                    <option value="professional">Professional - 1999/month (500 customers)</option>
-                    <option value="enterprise">Enterprise - 2999/month (unlimited)</option>
-                  </select>
+                    onChange={(v) => setBusinessForm({...businessForm, plan: v})}
+                    ariaLabel="Plan"
+                    options={[
+                      { value: 'small', label: 'Small - 999/month (100 customers)' },
+                      { value: 'professional', label: 'Professional - 1999/month (500 customers)' },
+                      { value: 'enterprise', label: 'Enterprise - 2999/month (unlimited)' },
+                    ]}
+                  />
                 </div>
               </div>
               <button
-                onClick={async () => {
-                  const headers = { 'x-admin-secret': secret };
-                  try {
-                    const res = await fetch(`${B2B_BASE}/create`, {
-                      method: 'POST',
-                      headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify(businessForm)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      alert(`✅ Business created! Code: ${data.business.businessCode}\nWelcome WhatsApp sent to owner.`);
-                      setBusinessForm({
-                        businessName: '',
-                        ownerWhatsapp: '',
-                        industryType: 'gym',
-                        plan: 'small'
-                      });
-                      fetchData(secret);
-                    } else {
-                      alert(`❌ Failed: ${data.error}`);
-                    }
-                  } catch (error) {
-                    alert('❌ Error creating business');
-                  }
-                }}
-                disabled={!secret || !businessForm.businessName || !businessForm.ownerWhatsapp}
-                className="w-full py-3 rounded-xl text-white font-bold transition-all"
-                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+                onClick={handleCreateBusiness}
+                disabled={creatingBusiness || !secret || !businessForm.businessName || !businessForm.ownerWhatsapp}
+                className={BTN_PRIMARY}
               >
-                Create Business & Send Welcome WhatsApp
+                {creatingBusiness && <BtnSpinner />}
+                {creatingBusiness ? 'Creating…' : 'Create Business & Send Welcome WhatsApp'}
               </button>
-            </div>
+            </AdminPanel>
 
             {/* Business List Table */}
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
-                <h2 className="font-bold text-gray-800">All Businesses ({businesses.length})</h2>
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+              <div className="p-4 border-b border-white/[0.07]">
+                <h2 className="font-heading font-bold text-white/90">
+                  All Businesses <span className="text-rm-green tabular-nums">({businesses.length})</span>
+                </h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Business Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Industry</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Plan</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Members</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <tr>
+                      <th className={TH_CLASS}>Business Name</th>
+                      <th className={TH_CLASS}>Industry</th>
+                      <th className={TH_CLASS}>Plan</th>
+                      <th className={TH_CLASS}>Members</th>
+                      <th className={TH_CLASS}>Code</th>
+                      <th className={TH_CLASS}>Status</th>
+                      <th className={TH_CLASS}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {businesses.map((business, i) => (
-                      <tr key={business.id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3 text-sm">{business.businessName}</td>
-                        <td className="px-4 py-3 text-sm">{business.industryType || '-'}</td>
-                        <td className="px-4 py-3 text-sm">{business.plan}</td>
-                        <td className="px-4 py-3 text-sm font-bold">{business.memberCount || 0}</td>
-                        <td className="px-4 py-3 text-sm font-mono">{business.businessCode}</td>
+                    {businesses.map((business) => (
+                      <tr key={business.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors duration-150">
+                        <td className="px-4 py-3 text-sm text-white/80 font-medium">{business.businessName}</td>
+                        <td className="px-4 py-3 text-sm text-white/50 capitalize">{business.industryType || '-'}</td>
+                        <td className="px-4 py-3 text-sm text-white/50 capitalize">{business.plan}</td>
+                        <td className="px-4 py-3 text-sm font-bold text-white/85 tabular-nums">{business.memberCount || 0}</td>
+                        <td className="px-4 py-3 text-sm font-mono text-rm-green/90">{business.businessCode}</td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            business.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          <span className={`px-2 py-1 rounded-full text-[11px] font-bold ${
+                            business.isActive
+                              ? 'bg-rm-green/[0.12] text-rm-green shadow-[inset_0_0_0_1px_rgba(37,211,102,0.3)]'
+                              : 'bg-red-400/[0.1] text-red-400 shadow-[inset_0_0_0_1px_rgba(248,113,113,0.3)]'
                           }`}>
                             {business.isActive ? 'Active' : 'Inactive'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          <div className="flex gap-2">
+                          <div className="flex gap-1.5">
                             {/* REMOVED: View Members button — founder cannot browse member lists per Privacy Policy */}
                             <button
-                              onClick={() => {
-                                const message = prompt('Enter bulk message:');
-                                if (message) {
-                                  sendBulkMessage(business.id, message);
-                                }
-                              }}
-                              className="px-3 py-1 bg-purple-500 text-white rounded-lg text-xs hover:bg-purple-600"
+                              onClick={() => setBulkDialog({ open: true, businessId: business.id, businessName: business.businessName })}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#C4A5FF] bg-[#C4A5FF]/[0.08] shadow-[inset_0_0_0_1px_rgba(196,165,255,0.25)] hover:bg-[#C4A5FF]/[0.16] transition-colors duration-150"
                             >
                               Send Bulk
                             </button>
@@ -814,22 +1791,13 @@ const fetchData = async (adminSecret) => {
                               onClick={() => {
                                 fetchQRCode(business.id, business.businessName);
                               }}
-                              className="px-3 py-1 bg-green-500 text-white rounded-lg text-xs hover:bg-green-600"
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rm-green bg-rm-green/[0.08] shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)] hover:bg-rm-green/[0.16] transition-colors duration-150"
                             >
                               QR Code
                             </button>
                             <button
-                              onClick={async () => {
-                                if (confirm(`Deactivate ${business.businessName}?`)) {
-                                  const headers = { 'x-admin-secret': secret };
-                                  await fetch(`${B2B_BASE}/${business.id}`, {
-                                    method: 'DELETE',
-                                    headers
-                                  });
-                                  fetchData(secret);
-                                }
-                              }}
-                              className="px-3 py-1 bg-red-500 text-white rounded-lg text-xs hover:bg-red-600"
+                              onClick={() => setDeactivateDialog({ open: true, businessId: business.id, businessName: business.businessName })}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 bg-red-400/[0.08] shadow-[inset_0_0_0_1px_rgba(248,113,113,0.25)] hover:bg-red-400/[0.16] transition-colors duration-150"
                             >
                               Deactivate
                             </button>
@@ -837,709 +1805,650 @@ const fetchData = async (adminSecret) => {
                         </td>
                       </tr>
                     ))}
+                    {businesses.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-12 text-center">
+                          <p className="text-3xl mb-2">🏢</p>
+                          <p className="text-white/60 text-sm font-medium">Abhi koi business nahi</p>
+                          <p className="text-white/30 text-xs mt-1">Upar se pehla business create karo.</p>
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             </div>
 
             {/* Send Reminder to Any Member */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-gray-800 mb-4">📤 Send Reminder to Member</h2>
+            <AdminPanel title="📤 Send Reminder to Member" sub="One member, one message — owner-requested only" testId="panel-send-reminder">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Business</label>
-                  <select
+                  <label className={LABEL_CLASS}>Select Business</label>
+                  <DarkSelect
                     value={individualMessage.businessId}
-                    onChange={(e) => setIndividualMessage({...individualMessage, businessId: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-                  >
-                    <option value="">Select Business</option>
-                    {businesses.map(business => (
-                      <option key={business.id} value={business.id}>{business.businessName}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setIndividualMessage({...individualMessage, businessId: v})}
+                    placeholder="Select Business"
+                    options={businesses.map(business => ({ value: business.id, label: business.businessName }))}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Member WhatsApp</label>
+                  <label className={LABEL_CLASS}>Member WhatsApp</label>
                   <input
                     type="text"
                     value={individualMessage.memberWhatsapp}
                     onChange={(e) => setIndividualMessage({...individualMessage, memberWhatsapp: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={`${INPUT_CLASS} font-mono`}
                     placeholder="916269915175"
                   />
                 </div>
               </div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <label className={LABEL_CLASS}>Message</label>
                 <textarea
                   value={individualMessage.message}
                   onChange={(e) => setIndividualMessage({...individualMessage, message: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                  className={`${INPUT_CLASS} resize-y min-h-[100px]`}
                   rows={4}
                   placeholder="Enter message..."
                 />
               </div>
               <button
-                onClick={async () => {
-                  if (!individualMessage.memberWhatsapp || !individualMessage.message || !individualMessage.businessId) {
-                    alert('Please fill all fields');
-                    return;
-                  }
-                  const headers = { 'x-admin-secret': secret };
-                  try {
-                    const res = await fetch(`${B2B_BASE}/send-reminder`, {
-                      method: 'POST',
-                      headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify(individualMessage)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      alert('✅ Message sent successfully!');
-                      setIndividualMessage({ memberWhatsapp: '', message: '', businessId: '' });
-                    } else {
-                      alert(`❌ Failed: ${data.error}`);
-                    }
-                  } catch (error) {
-                    alert('❌ Error sending message');
-                  }
-                }}
-                className="w-full py-3 rounded-xl text-white font-bold transition-all"
-                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+                onClick={handleSendReminder}
+                disabled={sendingReminder}
+                className={BTN_PRIMARY}
               >
-                Send Message
+                {sendingReminder && <BtnSpinner />}
+                {sendingReminder ? 'Sending…' : 'Send Message'}
               </button>
-            </div>
+            </AdminPanel>
 
             {/* CSV Bulk Import Section */}
-            <div style={{
-              background: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '24px'
-            }}>
-              <h3 style={{ margin: '0 0 4px 0', color: '#15803d', fontSize: '16px' }}>
-                📥 Bulk Import Members (CSV)
-              </h3>
-              <p style={{ margin: '0 0 16px 0', color: '#166534', fontSize: '13px' }}>
-                Upload a CSV file or paste CSV data. Format: <strong>Name, WhatsApp, Expiry Date</strong> (expiry optional)
-              </p>
-              {/* Business selector for CSV import */}
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
-                  Select Business *
-                </label>
-                <select
-                  value={csvBusinessId}
-                  onChange={e => setCsvBusinessId(e.target.value)}
-                  style={{
-                    width: '100%', padding: '8px 12px', borderRadius: '8px',
-                    border: '1px solid #d1d5db', fontSize: '14px'
-                  }}
-                >
-                  <option value="">-- Select Business --</option>
-                  {businesses.map(b => (
-                    <option key={b.id} value={b.id}>{b.businessName}</option>
-                  ))}
-                </select>
-              </div>
-              {/* CSV textarea */}
-              <div style={{ marginBottom: '12px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
-                  Paste CSV Data *
-                </label>
-                <textarea
-                  value={csvData}
-                  onChange={e => setCsvData(e.target.value)}
-                  placeholder={`Name,WhatsApp,ExpiryDate\nRahul Sharma,9876543210,2026-07-01\nPriya Singh,919876543211,2026-08-15\nAmit Kumar,9123456789`}
-                  rows={8}
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: '8px',
-                    border: '1px solid #d1d5db', fontSize: '13px',
-                    fontFamily: 'monospace', resize: 'vertical',
-                    boxSizing: 'border-box'
-                  }}
-                />
-              </div>
-              {/* File upload option */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '4px', color: '#374151' }}>
-                  Or Upload CSV File
-                </label>
-                <input
-                  type="file"
-                  accept=".csv,.txt"
-                  onChange={e => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = ev => setCsvData(ev.target.result);
-                    reader.readAsText(file);
-                  }}
-                  style={{ fontSize: '13px', color: '#374151' }}
-                />
-              </div>
-              {/* Format guide */}
-              <div style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                padding: '12px',
-                marginBottom: '16px',
-                fontSize: '12px',
-                color: '#6b7280'
-              }}>
-                <strong style={{ color: '#374151' }}>📋 Supported formats:</strong><br/>
-                • <code>Name, Phone, YYYY-MM-DD</code> — with expiry<br/>
-                • <code>Name, Phone</code> — no expiry<br/>
-                • <code>Phone, Name, YYYY-MM-DD</code> — phone first<br/>
-                • Phone can be 10 digits (91 added automatically) or full 91XXXXXXXXXX<br/>
-                • Header row is auto-detected and skipped<br/>
-                • Supports comma (,) or semicolon (;) separator
-              </div>
-              <button
-                onClick={handleCsvImport}
-                disabled={csvImporting || !csvBusinessId || !csvData.trim()}
-                style={{
-                  background: csvImporting || !csvBusinessId || !csvData.trim() ? '#9ca3af' : '#15803d',
-                  color: 'white', border: 'none', borderRadius: '8px',
-                  padding: '10px 24px', fontSize: '14px', fontWeight: '600',
-                  cursor: csvImporting || !csvBusinessId || !csvData.trim() ? 'not-allowed' : 'pointer'
-                }}
-              >
-                {csvImporting ? '⏳ Importing...' : '📥 Import Members'}
-              </button>
-              {/* Import results */}
-              {csvResults && (
-                <div style={{
-                  marginTop: '16px',
-                  background: '#fff',
-                  border: `1px solid ${csvResults.results.failed > 0 ? '#fca5a5' : '#bbf7d0'}`,
-                  borderRadius: '8px',
-                  padding: '16px'
-                }}>
-                  <h4 style={{ margin: '0 0 12px 0', color: '#374151', fontSize: '14px' }}>
-                    📊 Import Results
-                  </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '12px' }}>
-                    {[
-                      { label: 'Total', value: csvResults.results.total, color: '#374151' },
-                      { label: '✅ Success', value: csvResults.results.success, color: '#15803d' },
-                      { label: '❌ Failed', value: csvResults.results.failed, color: '#dc2626' },
-                      { label: '⏭️ Skipped', value: csvResults.results.skipped, color: '#d97706' },
-                    ].map(item => (
-                      <div key={item.label} style={{
-                        textAlign: 'center', padding: '8px',
-                        background: '#f9fafb', borderRadius: '6px'
-                      }}>
-                        <div style={{ fontSize: '20px', fontWeight: '700', color: item.color }}>
-                          {item.value}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#6b7280' }}>{item.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {csvResults.results.errors.length > 0 && (
-                    <div style={{ fontSize: '12px', color: '#dc2626' }}>
-                      <strong>Errors:</strong>
-                      <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
-                        {csvResults.results.errors.map((err, i) => (
-                          <li key={i}>{err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+            <AdminPanel title="📥 Bulk Import Members (CSV)" sub="Upload a CSV file or paste CSV data. Format: Name, WhatsApp, Expiry Date (expiry optional)" testId="panel-csv-import">
+              <div className="space-y-4">
+                <div>
+                  <label className={LABEL_CLASS}>Select Business *</label>
+                  <DarkSelect
+                    value={csvBusinessId}
+                    onChange={(v) => setCsvBusinessId(v)}
+                    placeholder="-- Select Business --"
+                    options={businesses.map(b => ({ value: b.id, label: b.businessName }))}
+                  />
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className={LABEL_CLASS}>Paste CSV Data *</label>
+                  <textarea
+                    value={csvData}
+                    onChange={e => setCsvData(e.target.value)}
+                    placeholder={`Name,WhatsApp,ExpiryDate\nRahul Sharma,9876543210,2026-07-01\nPriya Singh,919876543211,2026-08-15\nAmit Kumar,9123456789`}
+                    rows={8}
+                    className={`${INPUT_CLASS} font-mono text-[13px] resize-y`}
+                  />
+                </div>
+                <div>
+                  <label className={LABEL_CLASS}>Or Upload CSV File</label>
+                  <input
+                    type="file"
+                    accept=".csv,.txt"
+                    onChange={e => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = ev => setCsvData(ev.target.result);
+                      reader.readAsText(file);
+                    }}
+                    className="text-[13px] text-white/60 file:mr-3 file:px-4 file:py-2 file:rounded-lg file:border-0 file:bg-rm-green/[0.12] file:text-rm-green file:text-xs file:font-semibold file:cursor-pointer hover:file:bg-rm-green/[0.2]"
+                  />
+                </div>
+                <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-4 text-xs text-white/45 leading-relaxed">
+                  <strong className="text-white/70">📋 Supported formats:</strong><br/>
+                  • <code className="text-rm-green/80">Name, Phone, YYYY-MM-DD</code> — with expiry<br/>
+                  • <code className="text-rm-green/80">Name, Phone</code> — no expiry<br/>
+                  • <code className="text-rm-green/80">Phone, Name, YYYY-MM-DD</code> — phone first<br/>
+                  • Phone can be 10 digits (91 added automatically) or full 91XXXXXXXXXX<br/>
+                  • Header row is auto-detected and skipped<br/>
+                  • Supports comma (,) or semicolon (;) separator
+                </div>
+                <button
+                  onClick={handleCsvImport}
+                  disabled={csvImporting || !csvBusinessId || !csvData.trim()}
+                  className={BTN_PRIMARY}
+                >
+                  {csvImporting && <BtnSpinner />}
+                  {csvImporting ? 'Importing…' : '📥 Import Members'}
+                </button>
+
+                {/* Import results — animated stat strip */}
+                {csvResults && csvResults.results && (
+                  <motion.div
+                    initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                    className={`rounded-xl border p-4 ${
+                      csvResults.results.failed > 0 ? 'border-red-400/30 bg-red-400/[0.04]' : 'border-rm-green/30 bg-rm-green/[0.04]'
+                    }`}
+                  >
+                    <h4 className="text-sm font-heading font-bold text-white/85 mb-3">📊 Import Results</h4>
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      {[
+                        { label: 'Total', value: csvResults.results.total, color: 'text-white/85' },
+                        { label: '✅ Success', value: csvResults.results.success, color: 'text-rm-green' },
+                        { label: '❌ Failed', value: csvResults.results.failed, color: 'text-red-400' },
+                        { label: '⏭️ Skipped', value: csvResults.results.skipped, color: 'text-[#FF9933]' },
+                      ].map((item, i) => (
+                        <motion.div
+                          key={item.label}
+                          initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.25, delay: 0.08 * i, ease: [0.23, 1, 0.32, 1] }}
+                          className="text-center py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06]"
+                        >
+                          <div className={`font-heading font-extrabold text-xl tabular-nums ${item.color}`}>{item.value}</div>
+                          <div className="text-[10px] text-white/35 mt-0.5">{item.label}</div>
+                        </motion.div>
+                      ))}
+                    </div>
+                    {csvResults.results.errors.length > 0 && (
+                      <div className="text-xs text-red-400">
+                        <strong>Errors:</strong>
+                        <ul className="mt-1 pl-4 list-disc space-y-0.5 text-red-400/80">
+                          {csvResults.results.errors.map((err, i) => (
+                            <li key={i}>{err}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            </AdminPanel>
 
             {/* Add Member Form */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-gray-800 mb-1">
-                <span className="text-2xl mr-2">+</span>Add Member to Business
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Add member directly - no Supabase needed. 
-                Welcome WhatsApp sent automatically.
-              </p>
+            <AdminPanel title="➕ Add Member to Business" sub="Add member directly - no Supabase needed. Welcome WhatsApp sent automatically." testId="panel-add-member">
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select Business *
-                  </label>
-                  <select
+                  <label className={LABEL_CLASS}>Select Business *</label>
+                  <DarkSelect
                     value={addMemberForm.businessId}
-                    onChange={(e) => setAddMemberForm({
-                      ...addMemberForm, businessId: e.target.value
-                    })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-                  >
-                    <option value="">Select Business</option>
-                    {businesses.map(b => (
-                      <option key={b.id} value={b.id}>{b.businessName}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setAddMemberForm({ ...addMemberForm, businessId: v })}
+                    placeholder="Select Business"
+                    options={businesses.map(b => ({ value: b.id, label: b.businessName }))}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Member WhatsApp * (with country code)
-                  </label>
+                  <label className={LABEL_CLASS}>Member WhatsApp * (with country code)</label>
                   <input
                     type="text"
                     value={addMemberForm.memberWhatsapp}
                     onChange={(e) => setAddMemberForm({
-                      ...addMemberForm, 
+                      ...addMemberForm,
                       memberWhatsapp: e.target.value.replace(/\D/g, '')
                     })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={`${INPUT_CLASS} font-mono`}
                     placeholder="919876543210"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Member Name (optional)
-                  </label>
+                  <label className={LABEL_CLASS}>Member Name (optional)</label>
                   <input
                     type="text"
                     value={addMemberForm.memberName}
                     onChange={(e) => setAddMemberForm({
                       ...addMemberForm, memberName: e.target.value
                     })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={INPUT_CLASS}
                     placeholder="Rahul Sharma"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Subscription End Date (optional)
-                  </label>
+                  <label className={LABEL_CLASS}>Subscription End Date (optional)</label>
                   <input
                     type="date"
                     value={addMemberForm.subscriptionEndDate}
                     onChange={(e) => setAddMemberForm({
                       ...addMemberForm, subscriptionEndDate: e.target.value
                     })}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={INPUT_CLASS}
                   />
                 </div>
               </div>
               <button
-                onClick={async () => {
-                  if (!addMemberForm.businessId || !addMemberForm.memberWhatsapp) {
-                    setAddMemberMsg('Business aur WhatsApp number required hai');
-                    return;
-                  }
-                  if (addMemberForm.memberWhatsapp.length < 10) {
-                    setAddMemberMsg('Valid WhatsApp number enter karein (with country code)');
-                    return;
-                  }
-                  try {
-                    const res = await fetch(`${B2B_BASE}/members/add`, {
-                      method: 'POST',
-                      headers: {
-                        'x-admin-secret': secret,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify(addMemberForm)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      setAddMemberMsg('Member added! Welcome WhatsApp sent.');
-                      setAddMemberForm({
-                        businessId: '',
-                        memberWhatsapp: '',
-                        memberName: '',
-                        subscriptionEndDate: ''
-                      });
-                      fetchData(secret);
-                    } else {
-                      setAddMemberMsg(`Failed: ${data.error}`);
-                    }
-                  } catch (error) {
-                    setAddMemberMsg('Error adding member');
-                  }
-                }}
-                disabled={!addMemberForm.businessId || !addMemberForm.memberWhatsapp}
-                className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+                onClick={handleAddMember}
+                disabled={addingMember || !addMemberForm.businessId || !addMemberForm.memberWhatsapp}
+                className={BTN_PRIMARY}
               >
-                Add Member & Send Welcome WhatsApp <span className="ml-2">{'>'}</span>
+                {addingMember && <BtnSpinner />}
+                {addingMember ? 'Adding…' : 'Add Member & Send Welcome WhatsApp →'}
               </button>
               {addMemberMsg && (
                 <p className={`mt-3 text-sm font-medium ${
-                  addMemberMsg.includes('sent') ? 'text-green-600' : 'text-red-600'
+                  addMemberMsg.includes('sent') ? 'text-rm-green' : 'text-red-400'
                 }`}>
                   {addMemberMsg}
                 </p>
               )}
-            </div>
+            </AdminPanel>
 
             {/* Standalone Update Member Expiry — no member browsing */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-bold text-gray-800 mb-1">
-                <span className="text-2xl mr-2">🔧</span>Update Member Expiry
-              </h2>
-              <p className="text-sm text-gray-500 mb-4">
-                Owner-requested only. Type the member's WhatsApp number provided by the business owner.
-                No browsing — founder cannot see member lists.
-              </p>
+            <AdminPanel
+              title="🔧 Update Member Expiry"
+              sub="Owner-requested only. Type the member's WhatsApp number provided by the business owner. No browsing — founder cannot see member lists."
+              testId="panel-update-expiry"
+            >
               <div className="grid md:grid-cols-3 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Business *</label>
-                  <select
+                  <label className={LABEL_CLASS}>Select Business *</label>
+                  <DarkSelect
                     value={standaloneUpdateExpiry.businessId}
-                    onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, businessId: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
-                  >
-                    <option value="">Select Business</option>
-                    {businesses.map(b => (
-                      <option key={b.id} value={b.id}>{b.businessName}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, businessId: v})}
+                    placeholder="Select Business"
+                    options={businesses.map(b => ({ value: b.id, label: b.businessName }))}
+                  />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Member WhatsApp *</label>
+                  <label className={LABEL_CLASS}>Member WhatsApp *</label>
                   <input
                     type="text"
                     value={standaloneUpdateExpiry.memberWhatsapp}
                     onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, memberWhatsapp: e.target.value.replace(/\D/g, '')})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={`${INPUT_CLASS} font-mono`}
                     placeholder="919876543210"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">New Expiry Date *</label>
+                  <label className={LABEL_CLASS}>New Expiry Date *</label>
                   <input
                     type="date"
                     value={standaloneUpdateExpiry.newExpiryDate}
                     onChange={(e) => setStandaloneUpdateExpiry({...standaloneUpdateExpiry, newExpiryDate: e.target.value})}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-green-500"
+                    className={INPUT_CLASS}
                   />
                 </div>
               </div>
               <button
-                onClick={async () => {
-                  if (!standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate) {
-                    setStandaloneUpdateMsg('❌ Sab fields fill karein');
-                    return;
-                  }
-                  if (standaloneUpdateExpiry.memberWhatsapp.length < 10) {
-                    setStandaloneUpdateMsg('❌ Valid WhatsApp number enter karein (with country code)');
-                    return;
-                  }
-                  try {
-                    const res = await fetch(`${B2B_BASE}/members/update-expiry`, {
-                      method: 'POST',
-                      headers: {
-                        'x-admin-secret': secret,
-                        'Content-Type': 'application/json'
-                      },
-                      body: JSON.stringify({
-                        businessId: standaloneUpdateExpiry.businessId,
-                        memberWhatsapp: standaloneUpdateExpiry.memberWhatsapp,
-                        subscriptionEndDate: standaloneUpdateExpiry.newExpiryDate
-                      })
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      setStandaloneUpdateMsg('✅ Expiry updated successfully');
-                      setStandaloneUpdateExpiry({ businessId: '', memberWhatsapp: '', newExpiryDate: '' });
-                    } else {
-                      setStandaloneUpdateMsg(`❌ Failed: ${data.error}`);
-                    }
-                  } catch (error) {
-                    setStandaloneUpdateMsg('❌ Error updating expiry');
-                  }
-                }}
-                disabled={!standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate}
-                className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #006D2F, #25D366)' }}
+                onClick={handleUpdateExpiry}
+                disabled={updatingExpiry || !standaloneUpdateExpiry.businessId || !standaloneUpdateExpiry.memberWhatsapp || !standaloneUpdateExpiry.newExpiryDate}
+                className={BTN_PRIMARY}
               >
-                Update Expiry & Notify Member
+                {updatingExpiry && <BtnSpinner />}
+                {updatingExpiry ? 'Updating…' : 'Update Expiry & Notify Member'}
               </button>
               {standaloneUpdateMsg && (
                 <p className={`mt-3 text-sm font-medium ${
-                  standaloneUpdateMsg.includes('✅') ? 'text-green-600' : 'text-red-600'
+                  standaloneUpdateMsg.includes('✅') ? 'text-rm-green' : 'text-red-400'
                 }`}>
                   {standaloneUpdateMsg}
                 </p>
               )}
-            </div>
+            </AdminPanel>
           </div>
         )}
-      </div>
 
-      {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setSelectedUser(null)}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-gray-900">{selectedUser.name || 'Unknown'}</h3>
-              <button onClick={() => setSelectedUser(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
-            </div>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Phone</span><span className="font-mono">{selectedUser.whatsapp_phone_number}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Plan</span><span className={`px-2 py-1 rounded-full text-xs font-bold ${selectedUser.plan === 'PRO' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{selectedUser.plan}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Reminders Sent</span><span className="font-bold text-green-600">{selectedUser.sentReminders || 0}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Pending</span><span className="font-bold text-blue-600">{selectedUser.pendingReminders || 0}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Joined</span><span>{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('en-IN') : 'N/A'}</span></div>
-              {selectedUser.plan_expires_at && (
-                <div className="flex justify-between"><span className="text-gray-500">Pro Expires</span><span>{new Date(selectedUser.plan_expires_at).toLocaleDateString('en-IN')}</span></div>
-              )}
-            </div>
-            <button onClick={() => setSelectedUser(null)} className="w-full mt-4 py-2 rounded-xl bg-gray-100 text-gray-600 text-sm font-medium">Close</button>
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {selectedUser && (
+          <>
+            <motion.div
+              key="user-panel-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              className="fixed inset-0 z-50 bg-black/60"
+              onClick={() => setSelectedUser(null)}
+            />
+            <motion.aside
+              key="user-panel"
+              initial={reducedMotion ? { opacity: 0 } : { x: '100%' }}
+              animate={reducedMotion ? { opacity: 1 } : { x: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { x: '100%' }}
+              transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', stiffness: 340, damping: 34 }}
+              className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md bg-[#101410] border-l border-white/[0.08] shadow-[-24px_0_64px_rgba(0,0,0,0.5)] overflow-y-auto"
+              role="dialog"
+              aria-label="User details"
+            >
+              <div className="sticky top-0 bg-[#101410]/95 backdrop-blur-sm border-b border-white/[0.07] px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rm-primary to-rm-green flex items-center justify-center font-heading font-bold text-white shadow-[0_0_16px_rgba(37,211,102,0.25)]">
+                    {(selectedUser.name || 'U')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-bold text-white leading-tight">{selectedUser.name || 'Unknown'}</h3>
+                    <p className="text-xs font-mono text-white/40">{selectedUser.whatsapp_phone_number}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedUser(null)}
+                  aria-label="Close panel"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors duration-150"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-4 text-center">
+                    <p className="font-heading font-extrabold text-2xl text-rm-green tabular-nums">{selectedUser.sentReminders || 0}</p>
+                    <p className="text-[11px] text-white/35 mt-0.5">Reminders sent</p>
+                  </div>
+                  <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-4 text-center">
+                    <p className="font-heading font-extrabold text-2xl text-[#7CC5FF] tabular-nums">{selectedUser.pendingReminders || 0}</p>
+                    <p className="text-[11px] text-white/35 mt-0.5">Pending</p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-white/[0.03] border border-white/[0.07] divide-y divide-white/[0.05]">
+                  <div className="flex justify-between items-center px-4 py-3 text-sm">
+                    <span className="text-white/40">Plan</span>
+                    <PlanBadge plan={selectedUser.plan} />
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-3 text-sm">
+                    <span className="text-white/40">Phone</span>
+                    <span className="font-mono text-white/80">{selectedUser.whatsapp_phone_number}</span>
+                  </div>
+                  <div className="flex justify-between items-center px-4 py-3 text-sm">
+                    <span className="text-white/40">Joined</span>
+                    <span className="text-white/70">{selectedUser.created_at ? new Date(selectedUser.created_at).toLocaleDateString('en-IN') : 'N/A'}</span>
+                  </div>
+                  {selectedUser.plan_expires_at && (
+                    <div className="flex justify-between items-center px-4 py-3 text-sm">
+                      <span className="text-white/40">Pro expires</span>
+                      <span className="text-[#FF9933] font-medium">{new Date(selectedUser.plan_expires_at).toLocaleDateString('en-IN')}</span>
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-[11px] text-white/25 text-center">Esc ya bahar click karke band karo</p>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
 
         {/* Broadcast Tab */}
         {activeTab === 'broadcast' && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm max-w-2xl">
-            <h2 className="font-bold text-gray-800 mb-6">Broadcast Message</h2>
-            
-            {/* Filter Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Send To:</label>
-              <div className="space-y-2">
-                {[
-                  { value: 'all', label: 'All Users' },
-                  { value: 'free', label: 'Free Users Only' },
-                  { value: 'pro', label: 'Pro Users Only' }
-                ].map(option => (
-                  <label key={option.value} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="broadcastFilter"
-                      value={option.value}
-                      checked={broadcastFilter === option.value}
-                      onChange={(e) => setBroadcastFilter(e.target.value)}
-                      className="mr-3 text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-gray-700">{option.label}</span>
-                  </label>
-                ))}
+          <AdminPanel title="📢 Broadcast Message" sub="WhatsApp template blast to a whole user segment — handle with care" className="max-w-2xl" testId="panel-broadcast">
+            {/* Audience — segmented radio cards (native radios render OS-light).
+                Each card surfaces the live segment size from /stats aggregates. */}
+            <div className="mb-6" role="radiogroup" aria-label="Audience">
+              <label className={LABEL_CLASS}>Audience</label>
+              <div className="grid sm:grid-cols-3 gap-2.5">
+                {BROADCAST_FILTERS.map((option) => {
+                  const active = broadcastFilter === option.value;
+                  const count = stats?.users ? (stats.users[option.statsKey] ?? null) : null;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => setBroadcastFilter(option.value)}
+                      className={`group relative flex flex-col gap-2 rounded-xl px-4 py-3.5 text-left transition-colors duration-150 ${
+                        active
+                          ? 'bg-rm-green/[0.1] shadow-[inset_0_0_0_1px_rgba(37,211,102,0.4)]'
+                          : 'bg-white/[0.03] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)] hover:bg-white/[0.05]'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${active ? 'border-rm-green' : 'border-white/25'}`}>
+                          {active && <span className="w-1.5 h-1.5 rounded-full bg-rm-green" />}
+                        </span>
+                        <span className={`text-sm font-semibold transition-colors duration-150 ${active ? 'text-rm-green' : 'text-white/70 group-hover:text-white/90'}`}>
+                          {option.icon} {option.label}
+                        </span>
+                      </span>
+                      <span className={`pl-[22px] text-[11px] tabular-nums transition-colors duration-150 ${active ? 'text-rm-green/70' : 'text-white/35'}`}>
+                        {count !== null ? `${count.toLocaleString('en-IN')} recipient${count === 1 ? '' : 's'}` : 'count unavailable'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Message Input */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Message:</label>
+            {/* Message */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className={`${LABEL_CLASS} mb-0`}>Message</label>
+                <span className="text-[11px] text-white/30 tabular-nums">{broadcastMessage.length} chars</span>
+              </div>
               <textarea
                 value={broadcastMessage}
                 onChange={(e) => setBroadcastMessage(e.target.value)}
-                placeholder="Type your message here..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 h-32 focus:outline-none focus:border-green-500 resize-none"
+                placeholder="Type your message here…  (paste-friendly — line breaks preserved)"
+                className={`${INPUT_CLASS} min-h-[140px] resize-y leading-relaxed`}
               />
             </div>
 
-            {/* Warning */}
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                <span className="font-bold">Warning:</span> This will send WhatsApp message to all selected users. Cannot be undone.
+            {/* Danger note — saffron, mirrors the Business warning language */}
+            <div className="mb-5 flex items-start gap-2.5 p-4 rounded-xl bg-[#FF9933]/[0.06] border border-[#FF9933]/25">
+              <AlertTriangle className="w-4 h-4 text-[#FF9933] shrink-0 mt-0.5" />
+              <p className="text-sm text-[#FFB366] leading-relaxed">
+                <span className="font-bold text-[#FF9933]">Irreversible.</span> This sends a WhatsApp template to{' '}
+                {broadcastTargetCount !== null
+                  ? <><strong className="tabular-nums">~{broadcastTargetCount.toLocaleString('en-IN')}</strong> {broadcastMeta.noun}</>
+                  : <>every <strong>{broadcastMeta.noun}</strong></>}
+                {' '}and cannot be undone once it starts.
               </p>
             </div>
 
             {/* Error */}
-            {broadcastError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{broadcastError}</p>
-              </div>
-            )}
+            <AnimatePresence>
+              {broadcastError && (
+                <motion.div
+                  initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="mb-4 p-3 rounded-xl bg-red-400/[0.06] border border-red-400/25"
+                >
+                  <p className="text-sm text-red-400">{broadcastError}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Result */}
-            {broadcastResult && (
-              <div className={`mb-6 p-4 border rounded-lg ${
-                broadcastResult.status === 'started'
-                  ? 'bg-blue-50 border-blue-200'
-                  : broadcastResult.sent === 0
-                  ? 'bg-red-50 border-red-200'
-                  : 'bg-green-50 border-green-200'
-              }`}>
-                {broadcastResult.status === 'started' ? (
-                  <div>
-                    <p className="font-bold text-sm text-blue-700 mb-1">
-                      Broadcast started!
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      Sending to <strong>{broadcastResult.total} users</strong> via WhatsApp template.
-                    </p>
-                    <p className="text-xs text-blue-500 mt-2">
-                      Takes ~{Math.ceil(broadcastResult.total / 60)} minutes to complete.<br/>
-                      You will receive a WhatsApp message when done.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className={`font-bold text-sm mb-2 ${broadcastResult.sent === 0 ? 'text-red-700' : 'text-green-700'}`}>
-                      {broadcastResult.sent === 0 ? 'No messages sent!' : 'Broadcast complete!'}
-                    </p>
-                    <div className="flex items-center space-x-6 text-sm">
-                      <span className="text-green-700 font-bold">Sent: {broadcastResult.sent}</span>
-                      <span className="text-red-600 font-bold">Failed: {broadcastResult.failed}</span>
-                      <span className="text-gray-600">Total: {broadcastResult.total}</span>
+            {/* Result — designed cards for started / complete / zero-sent */}
+            <AnimatePresence>
+              {broadcastResult && (
+                <motion.div
+                  initial={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                  className={`mb-5 p-4 rounded-xl border ${
+                    broadcastResult.status === 'started'
+                      ? 'bg-[#7CC5FF]/[0.06] border-[#7CC5FF]/25'
+                      : broadcastResult.sent === 0
+                      ? 'bg-red-400/[0.06] border-red-400/25'
+                      : 'bg-rm-green/[0.06] border-rm-green/25'
+                  }`}
+                >
+                  {broadcastResult.status === 'started' ? (
+                    <div className="flex items-start gap-3">
+                      <Loader2 className="w-4 h-4 text-[#7CC5FF] shrink-0 mt-0.5 animate-spin motion-reduce:animate-none" />
+                      <div>
+                        <p className="font-heading font-bold text-sm text-[#7CC5FF] mb-1">Broadcast started</p>
+                        <p className="text-sm text-[#7CC5FF]/85">
+                          Sending to <strong className="tabular-nums">{(broadcastResult.total ?? 0).toLocaleString('en-IN')} users</strong> via WhatsApp template.
+                        </p>
+                        <p className="text-xs text-[#7CC5FF]/60 mt-2 leading-relaxed">
+                          ETA ~{Math.max(1, Math.ceil((broadcastResult.total ?? 0) / 60))} min to complete. You'll get a WhatsApp message when it finishes.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  ) : (
+                    <div>
+                      <p className={`font-heading font-bold text-sm mb-3 ${broadcastResult.sent === 0 ? 'text-red-400' : 'text-rm-green'}`}>
+                        {broadcastResult.sent === 0 ? 'No messages sent' : 'Broadcast complete'}
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { label: 'Sent', value: broadcastResult.sent ?? 0, color: 'text-rm-green' },
+                          { label: 'Failed', value: broadcastResult.failed ?? 0, color: 'text-red-400' },
+                          { label: 'Total', value: broadcastResult.total ?? 0, color: 'text-white/85' },
+                        ].map((chip, i) => (
+                          <motion.div
+                            key={chip.label}
+                            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.25, delay: 0.07 * i, ease: [0.23, 1, 0.32, 1] }}
+                            className="text-center py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.06]"
+                          >
+                            <div className={`font-heading font-extrabold text-xl tabular-nums ${chip.color}`}>{chip.value.toLocaleString('en-IN')}</div>
+                            <div className="text-[10px] text-white/35 mt-0.5">{chip.label}</div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            {/* Send Button */}
+            {/* Send Button — opens the styled danger confirmation */}
             <button
-              onClick={sendBroadcast}
+              onClick={requestBroadcast}
               disabled={broadcastLoading || !broadcastMessage.trim()}
-              className="w-full py-3 rounded-xl text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{ background: broadcastLoading ? '#9ca3af' : 'linear-gradient(135deg, #006D2F, #25D366)' }}
+              className={BTN_PRIMARY}
             >
-              {broadcastLoading ? 'Sending...' : 'Send Broadcast'}
+              {broadcastLoading && <BtnSpinner />}
+              {broadcastLoading ? 'Sending…' : 'Send Broadcast'}
             </button>
-          </div>
+          </AdminPanel>
         )}
 
         {/* Inbox Tab */}
         {activeTab === 'inbox' && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="font-bold text-gray-800">Inbox - Last 30 Messages</h2>
-              <button
-                onClick={fetchInbox}
-                disabled={inboxLoading}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-              >
-                {inboxLoading ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
-
-            {/* Error */}
-            {inboxError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{inboxError}</p>
-              </div>
-            )}
-
-            {/* Messages */}
-            {inboxLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              </div>
-            ) : inboxMessages.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No messages yet</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {inboxMessages.map((message) => (
-                  <div key={message.id} className="border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {message.userName || 'Unknown User'}
-                        </p>
-                        <p className="text-sm text-gray-600">+{message.phone}</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        {new Date(message.createdAt).toLocaleString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          timeZone: 'Asia/Kolkata'
-                        })} IST
-                      </p>
-                    </div>
-                    <div className="text-gray-700">
-                      {(() => {
-                        const isExpanded = expandedMessages[message.id];
-                        const isLong = message.message && message.message.length > 120;
-                        
-                        return (
-                          <div>
-                            <p style={{ 
-                              fontSize: '14px', 
-                              color: '#374151', 
-                              lineHeight: '1.6', 
-                              whiteSpace: 'pre-wrap', 
-                              wordBreak: 'break-word' 
-                            }}>
-                              {isLong && !isExpanded ? message.message.slice(0, 120) + '...' : message.message}
-                            </p>
-                            {isLong && (
-                              <button
-                                onClick={() => toggleMessage(message.id)}
-                                style={{
-                                  background: 'none',
-                                  border: 'none',
-                                  color: '#006D2F',
-                                  fontWeight: '600',
-                                  fontSize: '13px',
-                                  cursor: 'pointer',
-                                  padding: '4px 0',
-                                  textDecoration: 'underline'
-                                }}
-                              >
-                                {isExpanded ? 'Show less' : 'Show more'}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {/* Load More Button */}
-            {hasMoreMessages && (
-              <div className="text-center mt-6">
+          <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+            <div className="overflow-auto max-h-[72vh]">
+              {/* Sticky header — refresh wired to fetchInbox() (no args) so it does a
+                  fresh load, not an accidental load-more from passing the click event */}
+              <div className="sticky top-0 z-10 bg-[#10140E] px-5 py-4 border-b border-white/[0.07] flex items-center justify-between">
+                <h2 className="font-heading font-bold text-white/90">
+                  Inbox <span className="text-rm-green">— last 30</span>
+                </h2>
                 <button
-                  onClick={() => fetchInbox(true)}
+                  onClick={() => fetchInbox()}
                   disabled={inboxLoading}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white/70 border border-white/10 hover:border-rm-green/40 hover:text-rm-green disabled:opacity-50 transition-colors duration-200"
                 >
-                  {inboxLoading ? 'Loading...' : 'Load More'}
+                  <RefreshCw className={`w-4 h-4 ${inboxLoading ? 'animate-spin' : ''}`} /> Refresh
                 </button>
               </div>
-            )}
+
+              <div className="p-4">
+                {/* Error */}
+                {inboxError && (
+                  <div className="mb-4 p-3 rounded-xl bg-red-400/[0.06] border border-red-400/25">
+                    <p className="text-sm text-red-400">{inboxError}</p>
+                  </div>
+                )}
+
+                {/* Shimmer skeleton only on the initial load — load-more keeps the
+                    existing list visible and spins the button instead */}
+                {inboxLoading && inboxMessages.length === 0 ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.07] p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="space-y-2">
+                            <AdminSkeleton className="h-3.5 w-32 rounded" />
+                            <AdminSkeleton className="h-3 w-24 rounded" />
+                          </div>
+                          <AdminSkeleton className="h-3 w-24 rounded" />
+                        </div>
+                        <AdminSkeleton className="h-3 w-full rounded mb-1.5" />
+                        <AdminSkeleton className="h-3 w-3/4 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                ) : inboxMessages.length === 0 ? (
+                  <div className="px-4 py-14 text-center">
+                    <p className="text-3xl mb-2">📭</p>
+                    <p className="text-white/60 text-sm font-medium">Inbox khaali hai</p>
+                    <p className="text-white/30 text-xs mt-1">Jab koi user reply karega, woh yahan dikhega.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {inboxMessages.map((message, i) => (
+                      <InboxCard
+                        key={message.id}
+                        message={message}
+                        index={i}
+                        expanded={!!expandedMessages[message.id]}
+                        onToggle={toggleMessage}
+                        reduce={reducedMotion}
+                      />
+                    ))}
+
+                    {/* Load More — styled dark button; keeps hasMoreMessages logic */}
+                    {hasMoreMessages && (
+                      <div className="text-center pt-3">
+                        <button
+                          onClick={() => fetchInbox(true)}
+                          disabled={inboxLoading}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:border-rm-green/40 hover:text-rm-green disabled:opacity-50 transition-colors duration-200"
+                        >
+                          {inboxLoading && <BtnSpinner />}
+                          {inboxLoading ? 'Loading…' : 'Load More'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
     {/* QR Code Modal */}
+    <AnimatePresence>
     {qrModal.show && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+        className="fixed inset-0 bg-black/65 flex items-center justify-center z-[80] px-4"
+        onClick={() => setQrModal({ show: false, businessName: '', qrCode: '', joinUrl: '' })}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.96, y: 8 }}
+          transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+          className="w-full max-w-md rounded-2xl bg-[#131714] border border-white/10 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_32px_80px_rgba(0,0,0,0.6)]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-900">{qrModal.businessName}</h3>
+            <h3 className="font-heading font-bold text-white">{qrModal.businessName}</h3>
             <button
               onClick={() => setQrModal({ show: false, businessName: '', qrCode: '', joinUrl: '' })}
-              className="text-gray-400 hover:text-gray-600"
+              aria-label="Close QR modal"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.06] transition-colors duration-150"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="text-center">
-            <img 
-              src={qrModal.qrCode} 
-              alt="QR Code" 
-              className="mx-auto mb-4"
-              style={{ width: '300px', height: '300px' }}
-            />
-            
-            <div className="mb-4 p-3 bg-gray-100 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">Join URL:</p>
-              <p className="text-xs font-mono break-all text-gray-800">{qrModal.joinUrl}</p>
+            {/* White plate so the QR stays scannable on the dark theme */}
+            <div className="inline-block bg-white rounded-2xl p-3 mb-4 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+              <img
+                src={qrModal.qrCode}
+                alt="QR Code"
+                className="w-[280px] h-[280px]"
+              />
             </div>
-            
-            <p className="text-sm text-gray-600 mb-4">
+
+            <div className="mb-4 p-3 bg-white/[0.04] border border-white/[0.07] rounded-xl text-left">
+              <p className="text-[11px] text-white/35 mb-1">Join URL:</p>
+              <p className="text-xs font-mono break-all text-rm-green/90">{qrModal.joinUrl}</p>
+            </div>
+
+            <p className="text-xs text-white/40 mb-4">
               Print this QR code and place it at your front desk
             </p>
-            
+
             <div className="flex gap-2 justify-center">
               <button
                 onClick={() => {
@@ -1548,21 +2457,376 @@ const fetchData = async (adminSecret) => {
                   link.download = `${qrModal.businessName.replace(/[^a-zA-Z0-9]/g, '-')}-join-qr.png`;
                   link.click();
                 }}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-br from-rm-primary to-rm-green shadow-[0_4px_14px_rgba(0,109,47,0.35)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-150"
               >
                 Download QR
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-sm"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:bg-white/[0.05] transition-colors duration-150"
               >
                 Print
               </button>
             </div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     )}
+    </AnimatePresence>
+
+        {/* ═══ SECURITY TAB ═══
+            UI PREVIEW ONLY — this tab fires ZERO network calls. Every value is a
+            static placeholder and every control is disabled. When the backend
+            ships, the UI is final and we only wire these three endpoints:
+              GET  /api/admin/security/status                  → { blockedCount, pausedCount, rateLimitEventsToday, blocked: [{ phone, reason, blockedAt }] }
+              POST /api/admin/security/block    { phone, reason }
+              POST /api/admin/security/unblock  { phone }
+            These mirror the existing WhatsApp admin BLOCK / UNBLOCK / SECURITY STATUS commands. */}
+        {activeTab === 'security' && (
+          <div className="space-y-6">
+            {/* Preview banner */}
+            <div className="flex items-start gap-3 rounded-2xl bg-[#FF9933]/[0.06] border border-[#FF9933]/25 p-4">
+              <div className="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-[#FF9933]/10 text-[#FF9933]">
+                <Shield className="w-[18px] h-[18px]" />
+              </div>
+              <div>
+                <h2 className="font-heading font-bold text-white/90 flex items-center gap-2">
+                  Security Center
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-[#FF9933] bg-[#FF9933]/10 shadow-[inset_0_0_0_1px_rgba(255,153,51,0.3)]">UI PREVIEW</span>
+                </h2>
+                <p className="text-sm text-[#FFB366]/80 mt-1 leading-relaxed">
+                  Backend endpoints pending — this is the final UI with controls disabled. Values are placeholders until <code className="text-[#FF9933]/90">/api/admin/security/*</code> ships.
+                </p>
+              </div>
+            </div>
+
+            {/* System Status — placeholder stat cards */}
+            <div>
+              <h3 className="font-heading font-bold text-sm text-white/90 mb-3">System Status</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[
+                  { label: 'Blocked Numbers', accent: '#F87171' },
+                  { label: 'Auto-Paused Users', accent: '#FF9933' },
+                  { label: 'Rate-Limit Events (today)', accent: '#7CC5FF' },
+                ].map((card) => (
+                  <div key={card.label} className="relative rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5 overflow-hidden">
+                    <div aria-hidden="true" className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent" />
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-white/40 font-medium">{card.label}</p>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide text-[#FF9933] bg-[#FF9933]/10 shadow-[inset_0_0_0_1px_rgba(255,153,51,0.3)]">pending</span>
+                    </div>
+                    <p className="font-heading font-extrabold text-3xl tabular-nums text-white/25" style={{ letterSpacing: '-0.02em' }}>—</p>
+                    <p className="mt-1.5 text-[11px] text-white/30">Awaiting <code className="text-white/45">/security/status</code></p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Blocked Numbers table mockup */}
+            <div className="rounded-2xl bg-white/[0.03] border border-white/[0.08] overflow-hidden">
+              <div className="p-4 border-b border-white/[0.07] flex items-center justify-between">
+                <h3 className="font-heading font-bold text-white/90">Blocked Numbers</h3>
+                <span className="text-[11px] text-white/30">Example data — not live</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th className={TH_CLASS}>Phone</th>
+                      <th className={TH_CLASS}>Reason</th>
+                      <th className={TH_CLASS}>Blocked At</th>
+                      <th className={TH_CLASS}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="opacity-50 pointer-events-none select-none">
+                    {[
+                      { phone: '9199xxxxxx01', reason: 'Spam / abuse reports', at: '12 Jun, 09:14 am' },
+                      { phone: '9188xxxxxx47', reason: 'Rate-limit breach (auto)', at: '11 Jun, 06:52 pm' },
+                      { phone: '9177xxxxxx12', reason: 'Manual — owner request', at: '09 Jun, 01:30 pm' },
+                    ].map((row) => (
+                      <tr key={row.phone} className="border-b border-white/[0.04]">
+                        <td className="px-4 py-3 text-sm font-mono text-white/55">
+                          +{row.phone}
+                          <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide text-white/30 bg-white/[0.05]">example</span>
+                        </td>
+                        <td className="px-4 py-3 text-sm text-white/45">{row.reason}</td>
+                        <td className="px-4 py-3 text-sm text-white/35 tabular-nums">{row.at}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rm-green bg-rm-green/[0.08] shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)]">Unblock</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Block / Unblock controls */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              <AdminPanel title="🚫 Block a Number" sub="Permanently blocks a number from the WhatsApp bot">
+                <div className="space-y-3">
+                  <div>
+                    <label className={LABEL_CLASS}>WhatsApp number</label>
+                    <input type="text" disabled placeholder="919876543210" className={`${INPUT_CLASS} font-mono disabled:opacity-50 disabled:cursor-not-allowed`} />
+                  </div>
+                  <div>
+                    <label className={LABEL_CLASS}>Reason</label>
+                    <input type="text" disabled placeholder="Spam / abuse" className={`${INPUT_CLASS} disabled:opacity-50 disabled:cursor-not-allowed`} />
+                  </div>
+                  <span title="Activates when POST /api/admin/security/block ships" className="block">
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="w-full py-3 rounded-xl text-sm font-bold text-white bg-red-500/90 shadow-[0_4px_14px_rgba(239,68,68,0.25)] opacity-40 cursor-not-allowed inline-flex items-center justify-center gap-2"
+                    >
+                      <Lock className="w-4 h-4" /> Block Number
+                    </button>
+                  </span>
+                  <p className="text-[11px] text-white/30 text-center">Activates when the backend endpoint ships.</p>
+                </div>
+              </AdminPanel>
+
+              <AdminPanel title="✅ Unblock a Number" sub="Restores bot access for a previously blocked number">
+                <div className="space-y-3">
+                  <div>
+                    <label className={LABEL_CLASS}>WhatsApp number</label>
+                    <input type="text" disabled placeholder="919876543210" className={`${INPUT_CLASS} font-mono disabled:opacity-50 disabled:cursor-not-allowed`} />
+                  </div>
+                  <span title="Activates when POST /api/admin/security/unblock ships" className="block">
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="w-full py-3 rounded-xl text-sm font-bold text-white/80 border border-white/15 opacity-40 cursor-not-allowed inline-flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-4 h-4" /> Unblock
+                    </button>
+                  </span>
+                  <p className="text-[11px] text-white/30 text-center">Activates when the backend endpoint ships.</p>
+                </div>
+              </AdminPanel>
+            </div>
+
+            {/* Security Status — static policy cards (mirror WhatsApp admin SECURITY STATUS) */}
+            <div>
+              <h3 className="font-heading font-bold text-sm text-white/90 mb-3">Security Status</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { icon: '🔒', title: 'Permanent blocks', desc: 'Blocked numbers stay blocked across restarts until manually unblocked.' },
+                  { icon: '⏱️', title: 'Per-user rate limit', desc: 'Each number is throttled to a safe message rate; abusers are auto-paused.' },
+                  { icon: '📏', title: 'Message size limit', desc: 'Oversized inbound payloads are rejected before they reach the handler.' },
+                  { icon: '🛡️', title: 'DDoS protection', desc: 'Burst traffic is shed at the edge to keep the bot responsive for everyone.' },
+                ].map((p) => (
+                  <div key={p.title} className="rounded-2xl bg-white/[0.03] border border-white/[0.08] p-5">
+                    <div className="text-2xl mb-2">{p.icon}</div>
+                    <p className="font-heading font-bold text-sm text-white/85 mb-1">{p.title}</p>
+                    <p className="text-[12px] text-white/40 leading-relaxed">{p.desc}</p>
+                    <span className="inline-flex items-center gap-1 mt-3 text-[10px] font-bold tracking-wide text-rm-green/80">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rm-green/70" /> ACTIVE POLICY
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        </motion.div>
+        </main>
+      </div>
+
+      {/* ── Bulk message dialog (replaces window.prompt) ── */}
+      <AnimatePresence>
+        {bulkDialog.open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[90] flex items-center justify-center px-4 bg-black/65"
+            onClick={() => setBulkDialog({ open: false, businessId: '', businessName: '' })}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full max-w-md rounded-2xl bg-[#131714] border border-white/10 p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_32px_80px_rgba(0,0,0,0.6)]"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-label="Send bulk message"
+            >
+              <h3 className="font-heading font-bold text-white mb-1">📢 Bulk message — {bulkDialog.businessName}</h3>
+              <p className="text-sm text-white/45 mb-4">Sabhi members ko ek saath WhatsApp jayega.</p>
+              <textarea
+                value={bulkMessage}
+                onChange={(e) => setBulkMessage(e.target.value)}
+                rows={4}
+                autoFocus
+                placeholder="Message likho…"
+                className={`${INPUT_CLASS} resize-y mb-1`}
+              />
+              <p className="text-[11px] text-white/30 text-right mb-4 tabular-nums">{bulkMessage.length} chars</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setBulkDialog({ open: false, businessId: '', businessName: '' })}
+                  disabled={bulkSending}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white/60 border border-white/10 hover:bg-white/[0.05] transition-colors duration-150"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => sendBulkMessage(bulkDialog.businessId, bulkMessage)}
+                  disabled={bulkSending || !bulkMessage.trim()}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-br from-rm-primary to-rm-green shadow-[0_4px_14px_rgba(0,109,47,0.35)] disabled:opacity-50 inline-flex items-center justify-center gap-2 transition-all duration-150"
+                >
+                  {bulkSending && <BtnSpinner />}
+                  {bulkSending ? 'Sending…' : 'Send to all members'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Broadcast confirmation (replaces window.confirm) — fires the SAME
+            /api/admin/broadcast request only after explicit confirm ── */}
+      <ConfirmDialog
+        open={broadcastConfirmOpen}
+        title="Send this broadcast?"
+        body="A WhatsApp template message goes out to the selected segment."
+        consequences={[
+          broadcastTargetCount !== null
+            ? `Sends to ~${broadcastTargetCount.toLocaleString('en-IN')} ${broadcastMeta.noun}.`
+            : `Sends to every ${broadcastMeta.noun}.`,
+          'Delivery runs in the background and cannot be stopped once started.',
+          'Counts toward your WhatsApp template messaging limits.',
+        ]}
+        confirmLabel={broadcastLoading ? 'Sending…' : 'Send broadcast'}
+        danger
+        loading={broadcastLoading}
+        onConfirm={sendBroadcast}
+        onCancel={() => setBroadcastConfirmOpen(false)}
+      />
+
+      {/* ── Deactivate confirmation (replaces window.confirm) ── */}
+      <ConfirmDialog
+        open={deactivateDialog.open}
+        title={`Deactivate ${deactivateDialog.businessName}?`}
+        body="Yeh business ke saare automatic reminders rok dega."
+        consequences={[
+          'Members ko expiry reminders milna band ho jayenge',
+          'Owner ka WhatsApp console kaam karna band kar dega',
+          'Business list mein Inactive dikhega — data delete nahi hota',
+        ]}
+        confirmLabel="Deactivate"
+        danger
+        loading={deactivating}
+        onConfirm={handleDeactivateBusiness}
+        onCancel={() => setDeactivateDialog({ open: false, businessId: '', businessName: '' })}
+      />
+
+      {/* ── Command Palette (Ctrl/Cmd+K) ── */}
+      <AnimatePresence>
+        {paletteOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[100] flex items-start justify-center pt-[16vh] px-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setPaletteOpen(false)}
+          >
+            <motion.div
+              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.97, y: -6 }}
+              transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+              className="w-full max-w-lg"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Command
+                loop
+                className="rounded-2xl overflow-hidden bg-[#131714] border border-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_32px_80px_rgba(0,0,0,0.6)]"
+              >
+                <div className="flex items-center gap-2.5 px-4 border-b border-white/[0.07]">
+                  <Search className="w-4 h-4 text-white/30 shrink-0" />
+                  <Command.Input
+                    autoFocus
+                    placeholder="Jump to a section or run an action…"
+                    className="w-full bg-transparent py-3.5 text-sm text-white placeholder:text-white/30 outline-none"
+                  />
+                  <kbd className="px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-[10px] font-mono text-white/40 shrink-0">Esc</kbd>
+                </div>
+                <Command.List className="max-h-80 overflow-y-auto p-2">
+                  <Command.Empty className="py-8 text-center text-sm text-white/30">
+                    Kuch nahi mila — try another word.
+                  </Command.Empty>
+                  <Command.Group
+                    heading="Sections"
+                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-[0.15em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-white/25"
+                  >
+                    {NAV_ITEMS.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <Command.Item
+                          key={item.id}
+                          value={item.label}
+                          onSelect={() => {
+                            switchTab(item.id);
+                            setPaletteOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 cursor-pointer data-[selected=true]:bg-rm-green/[0.12] data-[selected=true]:text-rm-green data-[selected=true]:shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)]"
+                        >
+                          <Icon className="w-4 h-4" />
+                          {item.label}
+                        </Command.Item>
+                      );
+                    })}
+                  </Command.Group>
+                  <Command.Group
+                    heading="Actions"
+                    className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-[0.15em] [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:text-white/25"
+                  >
+                    <Command.Item
+                      value="Refresh data"
+                      onSelect={() => {
+                        setPaletteOpen(false);
+                        fetchData(secret);
+                        if (activeTab === 'inbox') fetchInbox();
+                      }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 cursor-pointer data-[selected=true]:bg-rm-green/[0.12] data-[selected=true]:text-rm-green data-[selected=true]:shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)]"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Refresh data
+                    </Command.Item>
+                    <Command.Item
+                      value="Focus user search"
+                      onSelect={() => {
+                        setPaletteOpen(false);
+                        switchTab('users');
+                        setTimeout(() => searchInputRef.current && searchInputRef.current.focus(), 80);
+                      }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 cursor-pointer data-[selected=true]:bg-rm-green/[0.12] data-[selected=true]:text-rm-green data-[selected=true]:shadow-[inset_0_0_0_1px_rgba(37,211,102,0.25)]"
+                    >
+                      <Search className="w-4 h-4" />
+                      Focus user search
+                      <kbd className="ml-auto px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/10 text-[10px] font-mono text-white/40">/</kbd>
+                    </Command.Item>
+                    <Command.Item
+                      value="Logout"
+                      onSelect={handleLogout}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 cursor-pointer data-[selected=true]:bg-red-500/[0.12] data-[selected=true]:text-red-400 data-[selected=true]:shadow-[inset_0_0_0_1px_rgba(248,113,113,0.25)]"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </Command.Item>
+                  </Command.Group>
+                </Command.List>
+              </Command>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
