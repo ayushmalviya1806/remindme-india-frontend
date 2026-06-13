@@ -579,6 +579,8 @@ export default function AdminDashboard() {
   const [bulkSending, setBulkSending] = useState(false);
   const [deactivateDialog, setDeactivateDialog] = useState({ open: false, businessId: '', businessName: '' });
   const [deactivating, setDeactivating] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, businessId: '', businessName: '', memberCount: 0 });
+  const [deletingBusiness, setDeletingBusiness] = useState(false);
   const [creatingBusiness, setCreatingBusiness] = useState(false);
   const [sendingReminder, setSendingReminder] = useState(false);
   const [addingMember, setAddingMember] = useState(false);
@@ -901,6 +903,33 @@ const fetchQRCode = async (businessId, businessName) => {
     }
   };
 
+  /* Permanent hard-delete — only exposed on INACTIVE rows in the UI, so we never
+     send force. Active gyms can only be Deactivated (the backend also refuses an
+     active delete without force as defense-in-depth). */
+  const handleDeleteBusiness = async () => {
+    setDeletingBusiness(true);
+    try {
+      const headers = { 'x-admin-secret': secret };
+      const res = await fetch(`${B2B_BASE}/${deleteDialog.businessId}/permanent`, {
+        method: 'DELETE',
+        headers
+      });
+      if (res.status === 401) { handle401(); return; }
+      const data = await res.json();
+      if (data.success) {
+        toast.success(`Deleted ${data.deletedBusinessName} — ${data.deletedMemberCount} member${data.deletedMemberCount === 1 ? '' : 's'} removed`);
+        setDeleteDialog({ open: false, businessId: '', businessName: '', memberCount: 0 });
+        fetchData(secret, { silent: true });
+      } else {
+        toast.error(data.error || 'Failed to delete business');
+      }
+    } catch (error) {
+      toast.error('Error deleting business');
+    } finally {
+      setDeletingBusiness(false);
+    }
+  };
+
   const handleCreateBusiness = async () => {
     const headers = { 'x-admin-secret': secret };
     setCreatingBusiness(true);
@@ -1111,6 +1140,7 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
         setQrModal((q) => (q.show ? { show: false, businessName: '', qrCode: '', joinUrl: '' } : q));
         setBulkDialog((b) => (b.open ? { open: false, businessId: '', businessName: '' } : b));
         setDeactivateDialog((d) => (d.open ? { open: false, businessId: '', businessName: '' } : d));
+        setDeleteDialog((d) => (d.open ? { open: false, businessId: '', businessName: '', memberCount: 0 } : d));
         setBroadcastConfirmOpen(false);
       } else if (
         e.key === '/' &&
@@ -1943,12 +1973,24 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
                             >
                               QR Code
                             </button>
-                            <button
-                              onClick={() => setDeactivateDialog({ open: true, businessId: business.id, businessName: business.businessName })}
-                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 bg-red-400/[0.08] shadow-[inset_0_0_0_1px_rgba(248,113,113,0.25)] hover:bg-red-400/[0.16] transition-colors duration-150"
-                            >
-                              Deactivate
-                            </button>
+                            {/* Active gyms can only be Deactivated; Delete (permanent)
+                                is shown only once a business is Inactive — safer UX so a
+                                real, active gym can never be hard-deleted from the table. */}
+                            {business.isActive ? (
+                              <button
+                                onClick={() => setDeactivateDialog({ open: true, businessId: business.id, businessName: business.businessName })}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 bg-red-400/[0.08] shadow-[inset_0_0_0_1px_rgba(248,113,113,0.25)] hover:bg-red-400/[0.16] transition-colors duration-150"
+                              >
+                                Deactivate
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setDeleteDialog({ open: true, businessId: business.id, businessName: business.businessName, memberCount: business.memberCount || 0 })}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-500 bg-red-500/[0.1] shadow-[inset_0_0_0_1px_rgba(239,68,68,0.4)] hover:bg-red-500/[0.18] transition-colors duration-150"
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -2955,6 +2997,23 @@ const fetchData = async (adminSecret, { silent = false } = {}) => {
         loading={deactivating}
         onConfirm={handleDeactivateBusiness}
         onCancel={() => setDeactivateDialog({ open: false, businessId: '', businessName: '' })}
+      />
+
+      {/* ── Permanent delete confirmation (inactive businesses only) ── */}
+      <ConfirmDialog
+        open={deleteDialog.open}
+        title={`Permanently delete ${deleteDialog.businessName}?`}
+        body={`This removes the business and its ${deleteDialog.memberCount} member${deleteDialog.memberCount === 1 ? '' : 's'}. This cannot be undone.`}
+        consequences={[
+          'The business row is permanently removed from the database',
+          `${deleteDialog.memberCount} member record${deleteDialog.memberCount === 1 ? '' : 's'} deleted via cascade`,
+          'Cannot be undone — use Deactivate instead if you might need it back',
+        ]}
+        confirmLabel={deletingBusiness ? 'Deleting…' : 'Delete permanently'}
+        danger
+        loading={deletingBusiness}
+        onConfirm={handleDeleteBusiness}
+        onCancel={() => setDeleteDialog({ open: false, businessId: '', businessName: '', memberCount: 0 })}
       />
 
       {/* ── Block number confirmation ── */}
