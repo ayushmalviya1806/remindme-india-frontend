@@ -174,7 +174,7 @@ function buildOwnerReply(raw) {
     const name = rawName ? rawName[0].toUpperCase() + rawName.slice(1) : 'Member';
     const date = nameIdx >= 0 ? tokens.slice(nameIdx + 1).join(' ') : '';
     return {
-      text: `✅ ${name} added to Aapka Gym\n📅 Expiry: ${date || 'set ho gayi'}\n🔔 Auto reminders set:\n  • 7 din pehle\n  • 3 din pehle\n  • Expiry wale din\n  • 2 din baad`,
+      text: `✅ ${name} added to Aapka Gym\n📅 Expiry: ${date || 'set ho gayi'}\n🔔 Auto reminders set:\n  • 7 din pehle\n  • 3 din pehle\n  • 1 din pehle\n  • Expiry wale din`,
     };
   }
   if (upper.startsWith('MY MEMBERS') || upper === 'MEMBERS') {
@@ -778,7 +778,7 @@ export default function BusinessLanding() {
 
             {[
               { n: '1', t: 'Member ka data do', d: 'WhatsApp pe ek line bhejo:', code: 'ADD 919876543210 Rahul 2026-05-15', sub: 'Ya CSV upload — 100 members ek saath' },
-              { n: '2', t: 'Hum automatically remind karenge', d: '4 professional reminders aapke business name ke saath:', timeline: ['7 din pehle', '3 din pehle', 'Expiry wale din', '2 din baad'] },
+              { n: '2', t: 'Hum automatically remind karenge', d: '4 professional reminders aapke business name ke saath:', timeline: ['7 din pehle', '3 din pehle', '1 din pehle', 'Expiry wale din'] },
               { n: '3', t: 'Member khud renew karega', d: 'Time pe reminder = zyada renewals. Members ko bhoolne ka mauka hi nahi milta.', result: true },
             ].map((step, i) => (
               <motion.div
