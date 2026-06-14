@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const WHATSAPP_CTA = "https://wa.me/916269915175?text=DEMO";
+// B2B contact → opens the BOT with B2B intent text; the bot's lead-detection forwards
+// the inquiry to the founder, so no personal number is exposed on the page.
+const WHATSAPP_BIZ =
+  "https://wa.me/916269915175?text=Hi%2C%20I'm%20a%20gym%20owner%20interested%20in%20RemindMe%20India%20Business";
 
 const GD_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
@@ -446,6 +450,15 @@ body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM S
 .gdFooterRow{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
 .gdFooterSmall{ color:rgba(255,255,255,0.65); font-weight:600; font-size:12px; margin-top:6px; }
 .gdFooterRight{ color:rgba(255,255,255,0.65); font-weight:700; font-size:12px; }
+.gdFooterBizCta{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--gd-primary); color:#fff; font-weight:800;
+  border-radius:var(--gd-radius-pill);
+  padding:8px 14px; font-size:13px; text-decoration:none;
+  box-shadow:0 4px 14px rgba(37,211,102,0.28);
+  transition:transform 160ms ease, box-shadow 160ms ease;
+}
+.gdFooterBizCta:hover{ transform:translateY(-1px); box-shadow:0 8px 22px rgba(37,211,102,0.34); }
 
 /* Floating particles (keep exactly) */
 .gdParticles{
@@ -1171,8 +1184,8 @@ function Testimonial() {
             problem ke liye. Local gyms ise apne members ke expiry reminders ke liye
             use karte hain. Koi app nahi, koi training nahi — sirf WhatsApp.
           </div>
-          <div className="gdAttr">🏋️ Reference gym: Ayush Fitness, Indore</div>
-          <div className="gdSmallMuted">Built by Ayush Malviya · MSME registered</div>
+          <div className="gdAttr">🏋️ Built for Indian gyms & fitness centers</div>
+          <div className="gdSmallMuted">MSME registered · Made in Indore 🇮🇳</div>
         </div>
       </div>
     </section>
@@ -1218,9 +1231,17 @@ function Footer() {
         <div className="gdFooterRow">
           <div>
             <div style={{ fontWeight: 800 }}>
-              RemindMe India | Built by Ayush Malviya, Indore 🇮🇳
+              RemindMe India · Made in Indore 🇮🇳
             </div>
-            <div className="gdFooterSmall">remindmeindia.site | +91 74705 78178</div>
+            <div className="gdFooterSmall" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px 14px", marginTop: 10 }}>
+              <a href={WHATSAPP_BIZ} target="_blank" rel="noopener noreferrer" className="gdFooterBizCta">
+                💬 Message us on WhatsApp
+              </a>
+              <span>remindmeindia.site</span>
+              <a href="mailto:hello.remindmeindia@gmail.com" style={{ color: "inherit", textDecoration: "underline" }}>
+                hello.remindmeindia@gmail.com
+              </a>
+            </div>
           </div>
           <div className="gdFooterRight">© 2026 RemindMe India. MSME Registered.</div>
         </div>
