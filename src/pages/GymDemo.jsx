@@ -22,10 +22,11 @@ const GD_CSS = `
 
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
-body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+html{ scroll-behavior:smooth; }
+body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; overflow-x:hidden; }
 
-.gdRoot{ position:relative; overflow:hidden; background:var(--gd-bg); }
-.gdContainer{ width:min(1120px, calc(100% - 48px)); margin:0 auto; }
+.gdRoot{ position:relative; overflow-x:hidden; width:100%; max-width:100%; background:var(--gd-bg); }
+.gdContainer{ width:min(1120px, calc(100% - 40px)); margin:0 auto; }
 .gdH{ font-family:'Syne', system-ui, sans-serif; letter-spacing:-0.02em; }
 .gdSub{ color:rgba(255,255,255,0.72); font-size:18px; line-height:1.6; }
 .gdBody{ color:var(--gd-body); font-size:16px; line-height:1.7; }
@@ -108,21 +109,34 @@ body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM S
 
 .gdBtn{
   position:relative;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
   border:none;
   cursor:pointer;
-  border-radius:var(--gd-radius-btn);
-  background:var(--gd-primary);
+  border-radius:var(--gd-radius-pill);
+  background:linear-gradient(135deg, var(--gd-dark) 0%, var(--gd-primary) 100%);
   color:#fff;
   font-weight:800;
-  padding:18px 26px;
-  font-size:18px;
-  box-shadow:var(--gd-glow);
+  padding:16px 28px;
+  min-height:54px;
+  font-size:17px;
+  line-height:1.15;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,0.22), 0 6px 18px rgba(0,109,47,0.22), 0 16px 40px rgba(37,211,102,0.20);
   overflow:hidden;
-  transition:transform 140ms ease, filter 140ms ease;
+  transition:transform 200ms cubic-bezier(.165,.84,.44,1), box-shadow 200ms ease;
   user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
 }
-.gdBtn:hover{ filter:brightness(1.03); transform:translateY(-1px); }
-.gdBtn:active{ transform:translateY(0); }
+.gdBtn:hover{ transform:translateY(-2px); box-shadow:inset 0 1px 0 rgba(255,255,255,0.22), 0 10px 26px rgba(0,109,47,0.26), 0 26px 60px rgba(37,211,102,0.30); }
+.gdBtn:active{ transform:translateY(0) scale(0.99); }
+.gdBtnXl{ font-size:19px; padding:20px 40px; min-height:60px; }
+.gdBtnSecondary{
+  background:#fff;
+  color:var(--gd-dark);
+  box-shadow:inset 0 0 0 1px rgba(7,94,84,0.14), 0 10px 30px rgba(7,94,84,0.10);
+}
+.gdBtnSecondary:hover{ box-shadow:inset 0 0 0 1px rgba(7,94,84,0.2), 0 14px 36px rgba(7,94,84,0.14); }
+.gdBtnFull{ width:100%; }
 .gdRippleSpan{
   position:absolute;
   border-radius:999px;
@@ -139,21 +153,17 @@ body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM S
 }
 .gdStatsRow{
   display:grid;
-  grid-template-columns:repeat(5, minmax(160px, 1fr));
-  gap:14px;
-  overflow:auto;
-  padding-bottom:6px;
-  scrollbar-width:thin;
+  grid-template-columns:repeat(5, 1fr);
+  gap:12px;
 }
 .gdStat{
   background:#fff;
   border:1px solid rgba(15,23,42,0.08);
   border-radius:14px;
-  padding:14px 14px;
+  padding:16px 16px;
   box-shadow:0 10px 30px rgba(7,94,84,0.06);
-  min-width:160px;
 }
-.gdStatNum{ color:var(--gd-dark); font-weight:800; font-size:22px; }
+.gdStatNum{ color:var(--gd-dark); font-weight:800; font-size:22px; line-height:1.1; }
 .gdStatLabel{ color:var(--gd-body); font-size:13px; margin-top:6px; }
 
 .gdGrid3{ display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; }
@@ -495,9 +505,68 @@ body{ margin:0; background:var(--gd-bg); color:var(--gd-text); font-family:'DM S
   .gdGrid3{ grid-template-columns:1fr; }
   .gdBA{ grid-template-columns:1fr; }
   .gdLiveGrid{ grid-template-columns:1fr; }
-  .gdStatsRow{ grid-template-columns:repeat(5, minmax(220px, 1fr)); }
-  .gdRoiGrid{ grid-template-columns:1fr; }
+  .gdStatsRow{ grid-template-columns:repeat(3, 1fr); }
+  .gdRoiGrid{ grid-template-columns:repeat(3, 1fr); }
   .gdHeroNote{ width:min(520px, 92%); margin-left:auto; margin-right:auto; }
+}
+
+@media (max-width: 760px){
+  .gdSection{ padding:62px 0; }
+}
+
+@media (max-width: 640px){
+  .gdContainer{ width:calc(100% - 32px); }
+  .gdSection{ padding:54px 0; }
+  .gdHero{ min-height:auto; }
+  .gdHeroCenter{ padding:18px 0 40px; min-height:calc(100svh - 72px); }
+  .gdHeadline{ font-size:clamp(30px, 8.5vw, 44px); }
+  .gdSub{ font-size:16px; }
+
+  /* Stats: clean 2-col; the 5th spans full width as a closing highlight */
+  .gdStatsRow{ grid-template-columns:repeat(2, 1fr); gap:10px; }
+  .gdStat{ padding:14px 14px; }
+  .gdStatNum{ font-size:20px; }
+  .gdStat:nth-child(5){ grid-column:1 / -1; text-align:center; }
+
+  /* Phone mockup full width */
+  .gdPhone{ width:100%; }
+  .gdChat{ min-height:340px; }
+
+  /* Full-width, thumb-friendly CTAs */
+  .gdBtn{ width:100%; }
+  .gdPill{ font-size:13px; padding:9px 12px; }
+
+  /* Cards: edge-friendly padding */
+  .gdRoiCard, .gdPricingCard, .gdQuoteCard{ padding:18px 16px; }
+  .gdPrice{ font-size:58px; }
+  .gdCounter{ font-size:clamp(42px, 13vw, 62px); }
+  .gdRoiGrid{ gap:10px; }
+  .gdBA{ gap:12px; }
+
+  .gdTopbarRight{ display:none; }
+  .gdFooterRow{ flex-direction:column; gap:10px; }
+}
+
+@media (max-width: 380px){
+  .gdHeadline{ font-size:30px; }
+  .gdStatsRow{ grid-template-columns:1fr; }
+  .gdStat:nth-child(5){ grid-column:auto; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  html{ scroll-behavior:auto; }
+  *, *::before, *::after{
+    animation-duration:0.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:0.001ms !important;
+  }
+  .gdReveal, .gdStagger > *, .gdSideSlideL, .gdSideSlideR, .gdWord{
+    opacity:1 !important;
+    transform:none !important;
+  }
+  .gdParticles{ display:none !important; }
+  .gdPhone{ animation:none !important; }
+  .gdScrollDot::after{ animation:none !important; }
 }
 `;
 
@@ -630,36 +699,16 @@ function CTAButton({ children, variant = "primary", size = "lg" }) {
     }, 280);
   };
 
-  const baseStyle =
-    variant === "primary"
-      ? {
-          background: "var(--gd-primary)",
-          color: "#fff",
-          boxShadow: "var(--gd-glow)",
-        }
-      : {
-          background: "#fff",
-          color: "var(--gd-dark)",
-          border: "1px solid rgba(255,255,255,0.35)",
-          boxShadow: "0 14px 50px rgba(255,255,255,0.10)",
-        };
-
-  const sizeStyle =
-    size === "xl"
-      ? { fontSize: 20, padding: "22px 44px" }
-      : { fontSize: 18, padding: "18px 26px" };
+  const cls = [
+    "gdBtn",
+    variant === "secondary" ? "gdBtnSecondary" : "",
+    size === "xl" ? "gdBtnXl" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <button
-      type="button"
-      className="gdBtn"
-      onClick={onClick}
-      style={{
-        ...baseStyle,
-        ...sizeStyle,
-        borderRadius: "var(--gd-radius-btn)",
-      }}
-    >
+    <button type="button" className={cls} onClick={onClick}>
       {children}
     </button>
   );
@@ -682,7 +731,7 @@ function Hero() {
 
         <div className="gdHeroCenter">
           <div className="gdPill gdBadge" style={{ marginBottom: 14 }}>
-            ⚡ Indore & Bhopal ke gyms use kar rahe hain
+            🇮🇳 Indore mein bana — gym owners ke liye
           </div>
 
           <h1 className="gdHeadline gdH" aria-label="Members renewal kabhi nahi bhoolenge">
@@ -707,7 +756,7 @@ function Hero() {
           <div className="gdHeroBullets gdPills" style={{ marginTop: 20 }}>
             <span className="gdPill">⚡ 5 minute setup</span>
             <span className="gdPill">🔔 Auto reminders — 7, 3, 1 din pehle</span>
-            <span className="gdPill">💰 ₹999/month — 7 din FREE</span>
+            <span className="gdPill">💰 ₹999/month · cancel anytime</span>
           </div>
 
           <div style={{ marginTop: 18 }}>
@@ -732,11 +781,11 @@ function StatsBar() {
   const inView = useInView(ref, { once: true, threshold: 0.25 });
 
   const stats = [
-    { num: "343+", label: "Users" },
-    { num: "1,500+", label: "Reminders sent" },
-    { num: "2", label: "Gyms onboarded" },
-    { num: "98%", label: "Delivery rate" },
-    { num: "₹999", label: "per month only" },
+    { num: "343+", label: "Log RemindMe use karte hain" },
+    { num: "₹999", label: "Per month — flat" },
+    { num: "5 min", label: "Setup time" },
+    { num: "4", label: "Reminders/member (7·3·1 + expiry)" },
+    { num: "WhatsApp", label: "Native — koi app nahi" },
   ];
 
   return (
@@ -766,7 +815,7 @@ function HowItWorks() {
     <section className="gdSection gdAlt">
       <div className="gdContainer">
         <div ref={ref} className={`gdReveal ${inView ? "gdIn" : ""}`}>
-          <div className="gdH" style={{ fontSize: 40, fontWeight: 800 }}>
+          <div className="gdH" style={{ fontSize: "clamp(26px, 5.2vw, 40px)", fontWeight: 800 }}>
             Kaise kaam karta hai?
           </div>
           <div className="gdBody" style={{ marginTop: 10, fontWeight: 700 }}>
@@ -830,15 +879,15 @@ function PainPoint() {
     <section className="gdSection">
       <div className="gdContainer">
         <div ref={ref} className={`gdReveal ${inView ? "gdIn" : ""}`}>
-          <div className="gdH" style={{ fontSize: 40, fontWeight: 800 }}>
+          <div className="gdH" style={{ fontSize: "clamp(26px, 5.2vw, 40px)", fontWeight: 800 }}>
             Har mahine kitne members renewal bhool jaate hain?
           </div>
           <div className="gdBody" style={{ marginTop: 10, fontWeight: 700 }}>
-            Average gym ka monthly loss — silently
+            Ek simple example — agar members renewal bhool jaayein
           </div>
 
           <div className="gdCounter gdH">₹{counter.toLocaleString("en-IN")}</div>
-          <div className="gdCounterSub">per month — average gym for 100 members</div>
+          <div className="gdCounterSub">Example math: ~15 missed renewals × ₹1,000 each</div>
         </div>
 
         <div className="gdBA" style={{ marginTop: 26 }}>
@@ -862,7 +911,7 @@ function PainPoint() {
             <ul className="gdList">
               <li>🤖 <span>Bot khud remind karta hai — automatically</span></li>
               <li>✅ <span>Members apne aap renew karte hain</span></li>
-              <li>💰 <span>Average ₹12,000+/month recovered</span></li>
+              <li>💰 <span>Har recovered renewal = seedha revenue wapas</span></li>
               <li>⚡ <span>Zero time spent on reminders</span></li>
               <li>😊 <span>Professional relationship maintained</span></li>
             </ul>
@@ -894,7 +943,7 @@ function LiveDemo() {
         {
           from: "bot",
           text:
-            "✅ Rahul added to Iron Fitness\n📅 Expiry: 25 Jun 2026\n🔔 Auto reminders set:\n  • 7 days before\n  • 3 days before\n  • On expiry day\n  • 2 days after",
+            "✅ Rahul added to Iron Fitness\n📅 Expiry: 25 Jun 2026\n🔔 Auto reminders set:\n  • 7 days before\n  • 3 days before\n  • 1 day before\n  • On expiry day",
         },
       ],
       members: [
@@ -955,7 +1004,7 @@ function LiveDemo() {
     <section className="gdSection gdTint">
       <div className="gdContainer">
         <div ref={ref} className={`gdReveal ${inView ? "gdIn" : ""}`}>
-          <div className="gdH" style={{ fontSize: 40, fontWeight: 800 }}>
+          <div className="gdH" style={{ fontSize: "clamp(26px, 5.2vw, 40px)", fontWeight: 800 }}>
             Khud dekho — live demo
           </div>
           <div className="gdBody" style={{ marginTop: 10, fontWeight: 700 }}>
@@ -1030,14 +1079,15 @@ function ROICalculator() {
       <div className="gdContainer">
         <div ref={ref} className={`gdReveal ${inView ? "gdIn" : ""}`}>
           <div className="gdRoiCard">
-            <div className="gdH" style={{ fontSize: 34, fontWeight: 800, textAlign: "center" }}>
-              Kitna paisa bachega?
+            <div className="gdH" style={{ fontSize: "clamp(24px, 4.8vw, 34px)", fontWeight: 800, textAlign: "center" }}>
+              Kitna paisa bach sakta hai?{" "}
+              <span style={{ color: "var(--gd-body)", fontWeight: 700, fontSize: "0.58em" }}>(example)</span>
             </div>
 
             <div className={`gdRoiGrid gdStagger ${inView ? "gdIn" : ""}`}>
               <div className="gdMetric">
                 <div className="gdMetricNum gdMetricNumGreen gdH">₹7,500+</div>
-                <div className="gdMetricLbl">5 extra renewals per month</div>
+                <div className="gdMetricLbl">Agar 5 members extra renew karein</div>
               </div>
               <div className="gdMetric">
                 <div className="gdMetricNum gdMetricNumDark gdH">₹999</div>
@@ -1050,7 +1100,7 @@ function ROICalculator() {
             </div>
 
             <div className="gdBody" style={{ marginTop: 14, fontWeight: 700, textAlign: "center" }}>
-              Sirf 1 extra renewal = ₹999 recovered. Baaki sab profit.
+              Yeh ek example hai — actual numbers aapke gym pe depend karte hain. Sirf 1 extra renewal = ₹999 wapas.
             </div>
 
             <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
@@ -1071,7 +1121,7 @@ function Pricing() {
     <section className="gdSection gdAlt">
       <div className="gdContainer">
         <div ref={ref} className={`gdReveal ${inView ? "gdIn" : ""}`} style={{ textAlign: "center" }}>
-          <div className="gdH" style={{ fontSize: 40, fontWeight: 800 }}>
+          <div className="gdH" style={{ fontSize: "clamp(26px, 5.2vw, 40px)", fontWeight: 800 }}>
             Simple pricing
           </div>
           <div className="gdBody" style={{ marginTop: 10, fontWeight: 700 }}>
@@ -1095,7 +1145,7 @@ function Pricing() {
             <li>✅ <span>Owner aur member dono ke liye</span></li>
           </ul>
 
-          <div className="gdHighlight">🎁 7 din FREE trial — koi payment nahi abhi</div>
+          <div className="gdHighlight">⚡ Setup 5 min mein · active turant · cancel anytime</div>
 
           <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }}>
             <CTAButton>WhatsApp pe DEMO chalu karo</CTAButton>
@@ -1115,14 +1165,14 @@ function Testimonial() {
       <div className="gdContainer">
         <div ref={ref} className={`gdQuoteCard gdReveal ${inView ? "gdIn" : ""}`}>
           <div className="gdQuoteMark">“</div>
-          <div className="gdStars">⭐⭐⭐⭐⭐</div>
+          <div className="gdStars">Indore-built 🇮🇳</div>
           <div className="gdQuote">
-            Setup mein sirf 10 minute lage. Pehle mahine 8 members ne renew kiya jo
-            pehle bhool jaate the. ₹12,000 recover hua. Ab main khud remind nahi
-            karta — bot karta hai.
+            RemindMe India Indore mein banaya gaya hai — gym owners ke real renewal
+            problem ke liye. Local gyms ise apne members ke expiry reminders ke liye
+            use karte hain. Koi app nahi, koi training nahi — sirf WhatsApp.
           </div>
-          <div className="gdAttr">🏋️ Gym Owner, Indore (name withheld on request)</div>
-          <div className="gdSmallMuted">Aur 2 aur gyms join ho rahe hain is mahine 🔥</div>
+          <div className="gdAttr">🏋️ Reference gym: Ayush Fitness, Indore</div>
+          <div className="gdSmallMuted">Built by Ayush Malviya · MSME registered</div>
         </div>
       </div>
     </section>
@@ -1139,13 +1189,13 @@ function FinalCTA() {
       <div className="gdContainer">
         <div ref={ref} className={`gdFinalCenter gdReveal ${inView ? "gdIn" : ""}`}>
           <div className="gdPill gdBadge" style={{ marginBottom: 14 }}>
-            🎁 7 din free trial — ab bhi available
+            ⚡ Setup sirf 5 minute mein
           </div>
-          <div className="gdH" style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05 }}>
-            7 din free try karo
+          <div className="gdH" style={{ fontSize: "clamp(34px, 7vw, 52px)", fontWeight: 800, lineHeight: 1.05 }}>
+            Aaj hi DEMO chalu karo
           </div>
-          <div className="gdFinalSub gdH" style={{ fontSize: 22, marginTop: 12 }}>
-            Pasand nahi aaya toh kuch nahi.
+          <div className="gdFinalSub gdH" style={{ fontSize: "clamp(18px, 4vw, 22px)", marginTop: 12 }}>
+            ₹999/month · active turant · cancel anytime.
           </div>
 
           <div style={{ marginTop: 18 }}>
@@ -1153,7 +1203,7 @@ function FinalCTA() {
           </div>
 
           <div style={{ marginTop: 12, color: "rgba(255,255,255,0.82)", fontWeight: 700 }}>
-            Already 343+ log use kar rahe hain. Koi risk nahi.
+            WhatsApp khulega — koi account banana nahi, koi form nahi.
           </div>
         </div>
       </div>
