@@ -25,8 +25,8 @@ export default function PrivacyPolicy() {
           <h2 className="text-xl font-bold text-emerald-900 mb-3">📋 Ek Nazar Mein (At a Glance)</h2>
           <ul className="space-y-2 text-gray-800">
             <li>✅ Hum sirf reminder bhejne ke liye <strong>zaroori data</strong> lete hain — kuch extra nahi.</li>
-            <li>🔒 <strong>Founder bhi aapka phone number nahi dekh sakta</strong> — admin dashboard mein sirf counts dikhte hain.</li>
-            <li>🗑️ Aap kabhi bhi <strong>"DELETE MY DATA"</strong> bhej ke sab data mita sakte hain (15 din mein delete).</li>
+            <li>🔒 Hum sirf utna data access karte hain jitna service chalane aur support dene ke liye <strong>zaroori</strong> hai — aur data kabhi marketing ke liye share nahi karte.</li>
+            <li>🗑️ Aap kabhi bhi data deletion request kar sakte hain — email <strong>hello.remindmeindia@gmail.com</strong> (subject "DATA REQUEST"), 15 din mein process.</li>
             <li>🚫 Hum aapka data <strong>kabhi kisi ko bechte nahi</strong> — na ads, na third-party marketers.</li>
             <li>🎤 Voice notes <strong>turant delete</strong> ho jaate hain after transcription (audio nahi rakhte).</li>
             <li>💳 Payment details <strong>Razorpay ke paas</strong> hain — humare paas card number nahi aata.</li>
@@ -204,26 +204,26 @@ export default function PrivacyPolicy() {
         {/* THE CORE PROMISE — Privacy Moat */}
         <section className="mb-8">
           <div className="bg-emerald-900 text-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">🔒 4. The Core Promise: We Don't See Your Data</h2>
+            <h2 className="text-2xl font-bold mb-4">🔒 4. Our Core Promise: Minimal Data, Never Sold</h2>
             <p className="text-emerald-50 mb-4 leading-relaxed">
-              Our system is architected so that <strong>even the founder cannot view your individual reminders or member phone numbers in plaintext.</strong> This is RemindMe India's privacy-first commitment, not a marketing slogan.
+              We practice <strong>strict data minimization</strong>: we collect only what's needed to deliver reminders, we <strong>never sell or share your data for marketing</strong>, and we access personal data only as needed to operate and support the service.
             </p>
             <ul className="space-y-3 text-emerald-50">
               <li className="flex items-start">
                 <span className="text-emerald-300 mr-2">▸</span>
-                <span><strong>Reminders stored encrypted:</strong> All reminder content is encrypted at rest in our PostgreSQL database. Even direct database access does not reveal plaintext content.</span>
+                <span><strong>Encryption in transit &amp; at rest:</strong> Data is encrypted in transit (TLS and WhatsApp's end-to-end encryption), and stored on infrastructure with at-rest disk encryption provided by our database host (Supabase, AWS Mumbai).</span>
               </li>
               <li className="flex items-start">
                 <span className="text-emerald-300 mr-2">▸</span>
-                <span><strong>Admin dashboard shows counts only:</strong> The founder's admin interface displays aggregated statistics (total members, messages delivered, active subscriptions) — not individual phone numbers, names, or message content.</span>
+                <span><strong>Limited admin access:</strong> We limit the data shown in our internal admin tools to what's needed to operate and support the service, and we don't browse member data for any other purpose.</span>
               </li>
               <li className="flex items-start">
                 <span className="text-emerald-300 mr-2">▸</span>
-                <span><strong>B2B member phones are masked:</strong> When a business uploads member data, phone numbers are hashed/masked in our admin views. The founder sees only business-level statistics.</span>
+                <span><strong>Strict data minimization:</strong> We collect and keep only the minimum data required to deliver reminders — nothing extra.</span>
               </li>
               <li className="flex items-start">
                 <span className="text-emerald-300 mr-2">▸</span>
-                <span><strong>No casual browsing:</strong> No employee or owner can casually browse through your reminders. Access requires elevated permissions logged in audit trails.</span>
+                <span><strong>No casual browsing:</strong> We do not browse or use your reminders for anything beyond operating and supporting the service.</span>
               </li>
               <li className="flex items-start">
                 <span className="text-emerald-300 mr-2">▸</span>
@@ -231,7 +231,7 @@ export default function PrivacyPolicy() {
               </li>
             </ul>
             <p className="text-emerald-100 mt-4 text-sm italic border-t border-emerald-700 pt-3">
-              This privacy-first architecture is what separates RemindMe India from generic WhatsApp marketing tools.
+              Data minimization and never selling your data are core to how we operate RemindMe India.
             </p>
           </div>
         </section>
@@ -295,15 +295,21 @@ export default function PrivacyPolicy() {
                   <td className="p-2 text-gray-700">Payment amount, transaction ID, name. <strong>We never see your card details.</strong></td>
                   <td className="p-2 text-gray-700">India</td>
                 </tr>
+                <tr className="border-t border-gray-300 bg-gray-50">
+                  <td className="p-2 text-gray-700">PostHog</td>
+                  <td className="p-2 text-gray-700">Product/session analytics</td>
+                  <td className="p-2 text-gray-700">Usage events, session recordings (no payment/card data)</td>
+                  <td className="p-2 text-gray-700">USA</td>
+                </tr>
               </tbody>
             </table>
           </div>
 
           <h3 className="text-lg font-bold text-emerald-800 mb-2 mt-5">5.1 Cross-Border Data Transfer</h3>
           <p className="text-gray-700">
-            Some sub-processors (OpenAI, Render, Vercel) process data on servers outside India. We have implemented 
-            appropriate safeguards including <strong>Standard Contractual Clauses (SCCs)</strong> to ensure equivalent 
-            protections as required under the DPDP Act 2023 and our Data Processing Agreements.
+            Some sub-processors (OpenAI, Render, Vercel) process data on servers outside India. We rely on the
+            data-protection terms and safeguards offered by these established sub-processors under their standard
+            data processing terms, consistent with the DPDP Act 2023.
           </p>
 
           <h3 className="text-lg font-bold text-emerald-800 mb-2 mt-4">5.2 We Do NOT Share With</h3>
@@ -311,7 +317,7 @@ export default function PrivacyPolicy() {
             <li>Advertisers or ad networks</li>
             <li>Data brokers or marketing companies</li>
             <li>Government agencies (except when legally compelled by valid court orders)</li>
-            <li>Third-party analytics platforms (we use no Google Analytics, no Facebook Pixel)</li>
+            <li>Advertising or ad-tracking networks (we use no Google Analytics, no Facebook Pixel, and no advertising trackers)</li>
           </ul>
         </section>
 
@@ -340,8 +346,8 @@ export default function PrivacyPolicy() {
                   <td className="p-2 text-gray-700">8 years (as required by Indian Income Tax &amp; GST laws)</td>
                 </tr>
                 <tr className="border-t border-gray-300 bg-gray-50">
-                  <td className="p-2 font-semibold text-gray-700">Dormant accounts</td>
-                  <td className="p-2 text-gray-700">Auto-deleted after 6 months of inactivity (we notify first)</td>
+                  <td className="p-2 font-semibold text-gray-700">Inactive accounts</td>
+                  <td className="p-2 text-gray-700">May be deleted periodically; you can request deletion anytime by email</td>
                 </tr>
                 <tr className="border-t border-gray-300">
                   <td className="p-2 font-semibold text-gray-700">B2B member data</td>
@@ -374,7 +380,7 @@ export default function PrivacyPolicy() {
             </div>
             <div className="bg-emerald-50 border-l-4 border-emerald-700 p-3 rounded">
               <h4 className="font-bold text-emerald-900">7.3 Right to Erasure</h4>
-              <p className="text-gray-700 text-sm">Send "DELETE MY DATA" to our bot. Deleted within 15 days.</p>
+              <p className="text-gray-700 text-sm">Email hello.remindmeindia@gmail.com (subject "DATA REQUEST"). Processed manually within 15 days.</p>
             </div>
             <div className="bg-emerald-50 border-l-4 border-emerald-700 p-3 rounded">
               <h4 className="font-bold text-emerald-900">7.4 Right to Data Portability</h4>
@@ -392,8 +398,8 @@ export default function PrivacyPolicy() {
 
           <h3 className="text-lg font-bold text-emerald-800 mb-2 mt-5">How to Exercise Your Rights</h3>
           <ul className="list-disc pl-6 text-gray-700 space-y-1">
-            <li><strong>WhatsApp:</strong> Send "PRIVACY" or "DELETE MY DATA" to +91 62699 15175</li>
-            <li><strong>Email:</strong> hello.remindmeindia@gmail.com (subject "DATA REQUEST")</li>
+            <li><strong>Email (primary):</strong> hello.remindmeindia@gmail.com with subject "DATA REQUEST"</li>
+            <li><strong>WhatsApp:</strong> Message us at +91 62699 15175 and we'll guide you through your request</li>
             <li><strong>Acknowledgement:</strong> Within 48 hours</li>
             <li><strong>Resolution:</strong> Within 15 days (as committed by DPDP Act)</li>
           </ul>
@@ -406,11 +412,12 @@ export default function PrivacyPolicy() {
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-emerald-900 mb-3">8. Cookies &amp; Website Tracking</h2>
           <p className="text-gray-700">
-            Our website <strong>remindmeindia.site</strong> uses <strong>no cookies</strong>. We do not track you 
-            personally. We do not use Google Analytics, Facebook Pixel, or any cross-site tracking technology.
+            Our website <strong>remindmeindia.site</strong> uses <strong>privacy-respecting product analytics (PostHog)</strong> to
+            understand how the site is used and improve the service, including session analytics. We do <strong>NOT</strong> use
+            Google Analytics, Facebook Pixel, or advertising trackers, and we never sell your data.
           </p>
           <p className="text-gray-700 mt-2">
-            If we ever introduce any tracking, we will update this policy and request your consent first.
+            You can ask us to exclude your activity from analytics by emailing hello.remindmeindia@gmail.com. We will update this policy if our analytics practices change.
           </p>
         </section>
 
@@ -428,9 +435,8 @@ export default function PrivacyPolicy() {
           <p className="text-gray-700 mb-3">We implement industry-standard security measures to protect your data:</p>
           <ul className="list-disc pl-6 text-gray-700 space-y-2">
             <li><strong>Encryption in Transit:</strong> All data between you, WhatsApp, and our servers is encrypted via TLS 1.2+ and WhatsApp's end-to-end encryption.</li>
-            <li><strong>Encryption at Rest:</strong> Database content is encrypted using AES-256 on Supabase.</li>
-            <li><strong>Access Control:</strong> Only authorized backend processes can access the database. No human admin can download raw member data.</li>
-            <li><strong>Audit Logging:</strong> All access to data is logged with timestamps and user IDs.</li>
+            <li><strong>Encryption at Rest:</strong> Data is stored on infrastructure with at-rest disk encryption provided by our database host (Supabase, AWS Mumbai).</li>
+            <li><strong>Access Control:</strong> Admin access is restricted to the owner and protected by authentication. We limit who can access production data.</li>
             <li><strong>Regular Audits:</strong> We review third-party integrations and dependencies for security issues.</li>
             <li><strong>Incident Response:</strong> Data breaches are reported to affected users and the Data Protection Board of India within <strong>72 hours</strong>, as required by the DPDP Act.</li>
           </ul>
@@ -446,7 +452,7 @@ export default function PrivacyPolicy() {
             <p><strong>Designation:</strong> Founder &amp; Grievance Officer</p>
             <p><strong>Email:</strong> hello.remindmeindia@gmail.com</p>
             <p><strong>WhatsApp:</strong> +91 74705 78178 (Owner direct — legal notices only)</p>
-            <p><strong>Service Bot:</strong> +91 62699 15175 — send "GRIEVANCE" command</p>
+            <p><strong>Service WhatsApp:</strong> +91 62699 15175 (service queries; formal grievances via the email above)</p>
             <p><strong>Postal Address:</strong></p>
             <p className="ml-4">
               Room No. S94, JC Bose Hostel,<br />
@@ -474,8 +480,8 @@ export default function PrivacyPolicy() {
             <li>Material changes get a 30-day advance notice</li>
           </ul>
           <p className="text-gray-700 mt-3">
-            Continued use after updates implies acceptance. If you disagree, send "DELETE MY DATA" to our bot 
-            to delete your account.
+            Continued use after updates implies acceptance. If you disagree, email hello.remindmeindia@gmail.com
+            (subject "DATA REQUEST") to delete your account.
           </p>
         </section>
 
@@ -497,7 +503,7 @@ export default function PrivacyPolicy() {
             <div>
               <p className="font-semibold text-emerald-900 mb-2">Service &amp; Support</p>
               <p>💬 WhatsApp Bot: +91 62699 15175</p>
-              <p>🤖 Send "PRIVACY" for queries</p>
+              <p>🤖 Send "Hi" to get started</p>
               <p>🌐 <a href="https://remindmeindia.site" className="text-emerald-700 underline">remindmeindia.site</a></p>
             </div>
             <div>
