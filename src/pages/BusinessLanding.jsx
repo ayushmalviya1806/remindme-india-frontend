@@ -316,7 +316,7 @@ function OwnerNudge({ reduceMotion }) {
       transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
     >
       <div className="bg-white/95 border border-rm-green/25 rounded-2xl px-3.5 py-2.5 text-center shadow-[0_1px_2px_rgba(27,28,26,0.06),0_6px_16px_rgba(0,109,47,0.1)]">
-        <div className="text-[12px] text-rm-text font-medium mb-1.5">Aapke gym ke liye bhi — 7 din FREE 👉</div>
+        <div className="text-[12px] text-rm-text font-medium mb-1.5">Aapke gym ke liye bhi — ₹999/month 👉</div>
         <a
           href={WHATSAPP_CTA}
           target="_blank"
@@ -324,7 +324,7 @@ function OwnerNudge({ reduceMotion }) {
           data-testid="biz-demo-nudge-cta"
           className="inline-flex items-center gap-1 bg-rm-green text-white text-[12px] font-heading font-bold rounded-full px-3.5 py-1.5 shadow-[0_2px_8px_rgba(37,211,102,0.35)] active:scale-95 transition-transform duration-150"
         >
-          Free Trial Start Karo →
+          DEMO Chalu Karo →
         </a>
       </div>
     </motion.div>
@@ -514,7 +514,7 @@ export default function BusinessLanding() {
 
   const faqs = [
     { q: "Kya member ko app download karna padega?", a: "Bilkul nahi. Sirf WhatsApp chahiye — jo pehle se hai. RemindMe India seedha WhatsApp pe kaam karta hai." },
-    { q: "7-day trial ke baad kya hoga?", a: "Trial khatam hone se 2 din pehle reminder aayega. Pasand aaye toh ₹999/month continue karo. Nahi toh kuch nahi — koi auto-charge nahi." },
+    { q: "Pricing kaise kaam karti hai?", a: "₹999/month — pay karte hi turant active. Koi setup fee nahi, koi contract nahi. Cancel anytime — agle mahine se band, koi auto-renew lock nahi." },
     { q: "Agar member reminder nahi chahta?", a: "STOP bhej ke unsubscribe. Meta Business Policy compliant. Fully legal." },
     { q: "Kitne members add kar sakta hoon?", a: "Small: 100, Professional: 500, Enterprise: unlimited. CSV se 100 ek saath." },
     { q: "Custom messages bhej sakta hoon?", a: "Haan. BROADCAST se sabko ek saath — gym band, fee change, offer, kuch bhi." },
@@ -568,7 +568,7 @@ export default function BusinessLanding() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-sm px-5 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_1px_2px_rgba(0,109,47,0.12),0_4px_12px_rgba(0,109,47,0.18)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_2px_4px_rgba(0,109,47,0.15),0_8px_20px_rgba(0,109,47,0.22)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 ease-out"
             >
-              Start Free Trial
+              Get Started
             </a>
           </div>
         </div>
@@ -627,7 +627,7 @@ export default function BusinessLanding() {
                   data-testid="biz-hero-cta"
                   className="btn-shimmer inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-rm-primary to-rm-green text-white font-heading font-bold text-lg px-8 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_2px_4px_rgba(0,109,47,0.15),0_8px_20px_rgba(0,109,47,0.25),0_20px_48px_rgba(37,211,102,0.25)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_4px_8px_rgba(0,109,47,0.18),0_12px_28px_rgba(0,109,47,0.3),0_28px_64px_rgba(37,211,102,0.32)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 ease-out"
                 >
-                  Start 7-Day Free Trial →
+                  Get Started — ₹999/month →
                 </a>
                 <button
                   onClick={() => smoothScroll('how-it-works')}
@@ -638,7 +638,7 @@ export default function BusinessLanding() {
               </div>
 
               <p className="hero-rise hero-rise-5 mt-7 text-[13px] text-rm-muted flex flex-wrap justify-center lg:justify-start gap-x-4 gap-y-1.5 font-medium">
-                <span>✓ 7-day FREE trial</span>
+                <span>✓ Active turant</span>
                 <span>✓ Setup in 2 minutes</span>
                 <span>✓ Cancel anytime</span>
                 <span>✓ No app needed</span>
@@ -960,7 +960,7 @@ export default function BusinessLanding() {
             viewport={VIEWPORT}
           >
             <span className="inline-block text-[12px] font-heading font-bold text-rm-primary bg-[#E8F5E9] border border-rm-green/25 rounded-full px-4 py-1.5 mb-4 shadow-[0_1px_2px_rgba(0,109,47,0.06)]">
-              {'🎉'} 7-day FREE trial on all plans
+              {'⚡'} Active turant · cancel anytime · no contract
             </span>
             <div>
               <span className="inline-block text-[11px] font-heading font-bold tracking-[0.2em] uppercase text-rm-primary mb-3">Pricing</span>
@@ -979,7 +979,7 @@ export default function BusinessLanding() {
           >
             {[
               { name: 'Small', price: '999', members: '100', features: ['Auto expiry reminders', 'Broadcast messages', 'Monthly reports', 'QR code join', 'WhatsApp support'], popular: false, cta: 'https://rzp.io/rzp/0GZyM4M' },
-              { name: 'Professional', price: '1,999', members: '500', features: ['Everything in Small', 'Priority support', 'CSV bulk import', 'Custom welcome message', 'Trial nudge system'], popular: true, cta: 'https://rzp.io/rzp/e3OwPfK' },
+              { name: 'Professional', price: '1,999', members: '500', features: ['Everything in Small', 'Priority support', 'CSV bulk import', 'Custom welcome message', 'Expiry grace reminders'], popular: true, cta: 'https://rzp.io/rzp/e3OwPfK' },
               { name: 'Enterprise', price: '2,999', members: 'Unlimited', features: ['Everything in Professional', 'Multi-staff access', 'Dedicated support', 'Custom integrations', 'SLA guarantee'], popular: false, cta: 'https://rzp.io/rzp/r0zJWcih' },
             ].map((plan) =>
               plan.popular ? (
@@ -1025,7 +1025,7 @@ export default function BusinessLanding() {
                           ))}
                           <li className="flex items-center gap-2.5 text-[13px] text-rm-green font-semibold font-body">
                             <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">{'🎁'}</span>
-                            7-day FREE trial
+                            No setup fee · cancel anytime
                           </li>
                         </ul>
                         <a
@@ -1072,7 +1072,7 @@ export default function BusinessLanding() {
                     ))}
                     <li className="flex items-center gap-2.5 text-[13px] text-rm-primary font-semibold font-body">
                       <span className="w-5 h-5 flex items-center justify-center flex-shrink-0">{'🎁'}</span>
-                      7-day FREE trial
+                      No setup fee · cancel anytime
                     </li>
                   </ul>
                   <a
@@ -1210,7 +1210,7 @@ export default function BusinessLanding() {
         >
           <span className="block text-5xl mb-5">{'🚀'}</span>
           <h2 className="font-heading font-extrabold text-white text-4xl sm:text-5xl mb-4" style={{ letterSpacing: '-0.025em', lineHeight: 1.12 }}>
-            Ready to try?{' '}
+            Ready to start?{' '}
             <span
               style={{
                 background: 'linear-gradient(90deg, #B9F6CA, #FFFFFF, #FFD9A8)',
@@ -1219,7 +1219,7 @@ export default function BusinessLanding() {
                 WebkitTextFillColor: 'transparent',
               }}
             >
-              7 din FREE.
+              Aaj hi.
             </span>
           </h2>
           <p className="text-lg text-white/85 font-body mb-9 leading-relaxed">2 minute setup. No software. No app. Sirf WhatsApp.</p>
@@ -1231,7 +1231,7 @@ export default function BusinessLanding() {
               rel="noopener noreferrer"
               className="btn-shimmer btn-shimmer-dark relative inline-flex items-center gap-2 rounded-full bg-white text-rm-primary font-heading font-bold text-lg px-9 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,1),0_4px_12px_rgba(0,0,0,0.18),0_20px_56px_rgba(0,0,0,0.28)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,1),0_6px_16px_rgba(0,0,0,0.22),0_28px_72px_rgba(0,0,0,0.32)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 ease-out"
             >
-              Start 7-Day Free Trial →
+              Get Started — ₹999/month →
             </a>
           </span>
           <p className="text-[13px] text-white/60 font-body mt-5">
